@@ -1,40 +1,139 @@
-body { font-family: Arial, sans-serif; background: #f4f4f4; margin: 0; padding: 20px; }
-.container { max-width: 900px; margin: auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
-h1, h2 { text-align: center; }
-form { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 30px; }
-form input, form textarea, form button { padding: 10px; font-size: 16px; }
-form button { grid-column: span 2; background: #007bff; color: white; border: none; cursor: pointer; }
-ul { list-style: none; padding: 0; }
-li { background: #eee; margin: 10px 0; padding: 15px; border-radius: 5px; cursor: pointer; }
-li:hover { background: #ddd; }
-.modal { display: none; position: fixed; z-index: 1; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); }
-.modal-content { background: white; margin: 10% auto; padding: 20px; width: 80%; max-width: 600px; border-radius: 8px; }
-.close { float: right; font-size: 30px; cursor: pointer; }
+body { 
+    font-family: Arial, sans-serif; 
+    background: #f4f4f4; 
+    margin: 0; 
+    padding: 10px; /* Menos padding en móvil */
+}
+
+.container { 
+    max-width: 900px; 
+    margin: auto; 
+    background: white; 
+    padding: 15px; 
+    border-radius: 8px; 
+    box-shadow: 0 0 10px rgba(0,0,0,0.1); 
+}
+
+h1, h2 { 
+    text-align: center; 
+    font-size: 1.8em; /* Un poco más grande en móvil */
+}
+
+form { 
+    display: grid; 
+    grid-template-columns: 1fr; /* Por defecto 1 columna (móvil) */
+    gap: 12px; 
+    margin-bottom: 30px; 
+}
+
+form input, 
+form textarea { 
+    padding: 12px; 
+    font-size: 16px; 
+    border: 1px solid #ccc; 
+    border-radius: 5px; 
+    width: 100%; 
+    box-sizing: border-box; 
+}
+
+form button { 
+    grid-column: 1 / -1; 
+    background: #007bff; 
+    color: white; 
+    border: none; 
+    cursor: pointer; 
+    padding: 15px; 
+    font-size: 18px; 
+    border-radius: 5px; 
+}
+
+ul { 
+    list-style: none; 
+    padding: 0; 
+}
+
+li { 
+    background: #eee; 
+    margin: 10px 0; 
+    padding: 15px; 
+    border-radius: 8px; 
+    cursor: pointer; 
+    word-wrap: break-word; /* Para textos largos */
+}
+
+li:hover { 
+    background: #ddd; 
+}
+
+.modal { 
+    display: none; 
+    position: fixed; 
+    z-index: 1; 
+    left: 0; 
+    top: 0; 
+    width: 100%; 
+    height: 100%; 
+    background: rgba(0,0,0,0.5); 
+    overflow-y: auto; /* Scroll si es necesario */
+}
+
+.modal-content { 
+    background: white; 
+    margin: 5% auto; 
+    padding: 20px; 
+    width: 90%; 
+    max-width: 600px; 
+    border-radius: 8px; 
+}
+
+.close { 
+    float: right; 
+    font-size: 30px; 
+    cursor: pointer; 
+}
+
+/* Botones Editar/Eliminar */
+.actions {
+    margin-top: 10px;
+    text-align: right;
+}
+
+.edit-btn, .delete-btn {
+    padding: 8px 12px;
+    margin-left: 5px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
 .edit-btn {
-    float: right;
     background: #ffc107;
     color: black;
-    border: none;
-    padding: 5px 10px;
-    margin-left: 5px;
-    cursor: pointer;
-    border-radius: 3px;
 }
-.edit-btn:hover {
-    background: #e0a800;
+
+.delete-btn {
+    background: red;
+    color: white;
 }
+
+/* Filtros responsive */
 .filters {
     text-align: center;
     margin: 20px 0;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 8px;
 }
 
 .filter-btn {
-    padding: 10px 15px;
-    margin: 0 5px;
+    padding: 10px 12px;
     border: none;
-    border-radius: 5px;
+    border-radius: 20px; /* Más redondos, estilo pills */
     background: #eee;
     cursor: pointer;
+    flex: 1 1 auto;
+    min-width: 100px;
 }
 
 .filter-btn.active, .filter-btn:hover {
@@ -42,6 +141,20 @@ li:hover { background: #ddd; }
     color: white;
 }
 
-.status-verde { border-left: 5px solid #28a745; }
-.status-amarillo { border-left: 5px solid #ffc107; }
-.status-rojo { border-left: 5px solid #dc3545; }
+/* Estados */
+.status-verde { border-left: 8px solid #28a745; }
+.status-amarillo { border-left: 8px solid #ffc107; }
+.status-rojo { border-left: 8px solid #dc3545; }
+
+/* Media query para pantallas grandes (dos columnas en formulario) */
+@media (min-width: 768px) {
+    form {
+        grid-template-columns: 1fr 1fr; /* Dos columnas solo en desktop/tablet */
+    }
+    form button {
+        grid-column: span 2;
+    }
+    body { padding: 20px; }
+    .container { padding: 20px; }
+    h1, h2 { font-size: 2.2em; }
+}
