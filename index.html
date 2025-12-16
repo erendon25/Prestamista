@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Control de Préstamos</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <h1>Control de Préstamos</h1>
+        
+        <h2>Agregar Nuevo Préstamo</h2>
+        <form id="loan-form">
+            <input type="text" id="nombre" placeholder="Nombre del deudor" required>
+            <input type="tel" id="telefono" placeholder="Teléfono">
+            <input type="text" id="direccion" placeholder="Dirección">
+            <input type="number" id="capital" placeholder="Cantidad prestada" required step="0.01">
+            <input type="number" id="interes" placeholder="Interés diario (%)" required step="0.01">
+            <input type="number" id="mora" placeholder="Porcentaje de mora diaria (%) - opcional" step="0.01" min="0">
+            <input type="number" id="plazo-dias" placeholder="Plazo en días" required min="1">
+            <input type="date" id="fecha" placeholder="Fecha del préstamo">
+            <textarea id="notas" placeholder="Notas adicionales"></textarea>
+            <button type="submit">Agregar Préstamo</button>
+        </form>
+       <h2>Lista de Préstamos</h2>
+<div class="filters">
+    <button onclick="filterLoans('todos')" class="filter-btn active">Todos</button>
+    <button onclick="filterLoans('activos')" class="filter-btn">Activos (en verde)</button>
+    <button onclick="filterLoans('por-vencer')" class="filter-btn">Por vencer</button>
+    <button onclick="filterLoans('vencidos')" class="filter-btn">Vencidos (en rojo)</button>
+</div>
+        <ul id="loans-list"></ul>
+    </div>
+    
+    <!-- Modal para detalles -->
+    <div id="modal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2>Detalles del Préstamo</h2>
+            <div id="modal-body"></div>
+        </div>
+    </div>
+    <!-- Modal para editar -->
+<div id="edit-modal" class="modal">
+    <div class="modal-content">
+        <span class="close-edit">&times;</span>
+        <h2>Editar Préstamo</h2>
+        <form id="edit-form">
+            <input type="hidden" id="edit-index">
+            <input type="text" id="edit-nombre" placeholder="Nombre del deudor" required>
+            <input type="tel" id="edit-telefono" placeholder="Teléfono">
+            <input type="text" id="edit-direccion" placeholder="Dirección">
+            <input type="number" id="edit-capital" placeholder="Cantidad prestada" required step="0.01">
+            <input type="number" id="edit-interes" placeholder="Interés diario (%)" required step="0.01">
+            <input type="number" id="edit-mora" placeholder="Porcentaje de mora diaria (%) - opcional" step="0.01" min="0">
+            <input type="number" id="edit-plazo" placeholder="Plazo en días" required min="1">
+            <input type="date" id="edit-fecha" placeholder="Fecha del préstamo">
+            <textarea id="edit-notas" placeholder="Notas adicionales"></textarea>
+            <button type="submit">Guardar Cambios</button>
+        </form>
+    </div>
+    <script src="script.js"></script>
+    
+</div>
+</body>
+</html>
