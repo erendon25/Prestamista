@@ -1,27 +1,26 @@
 let loans = JSON.parse(localStorage.getItem('loans')) || [];
 let currentFilter = 'todos';
+let currentLoanIndex = null;
 
 function saveLoans() {
     localStorage.setItem('loans', JSON.stringify(loans));
+    updateSummary();
 }
 
-function calculateEndDate(fechaPrestamo, plazoDias) {
-    if (!fechaPrestamo) return null;
-    const date = new Date(fechaPrestamo);
+function calculateEndDate(fecha, plazoDias) {
+    if (!fecha) return null;
+    const date = new Date(fecha);
     date.setDate(date.getDate() + plazoDias);
     return date;
 }
 
 function getStatusAndMora(loan) {
-    if (!loan.fecha) return { status: 'sin-fecha', diasMora: 0, moraAcumulada: 0, totalConMora: 0, endDate: null };
+    if (!loan.fecha) return { status: 'sin-fecha', diasMora: 0, moraAcumulada: 0, totalConMora: 0, endDate: null, saldoPendiente: 0, totalPagado: 0, cuotaDiaria: 0 };
 
     const endDate = calculateEndDate(loan.fecha, loan.plazoDias);
-    if (!endDate) return { status: 'sin-fecha', diasMora: 0, moraAcumulada: 0, totalConMora: 0, endDate: null };
-
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-
-    const diffDays = Math.floor((today - endDate) / (1000 * 60 * 60 * 24)); // Días vencidos
+    const diffDays = Math.floor((today - endDate) / (1000 * 60 * 60 * 24));
 
     let status = 'verde';
     if (diffDays >= 1) status = 'rojo';
@@ -29,23 +28,25 @@ function getStatusAndMora(loan) {
 
     const diasMora = Math.max(0, diffDays);
 
-    let moraAcumulada = 0;
-    let totalConMora = 0;
-
-    if (diasMora > 0 && loan.mora > 0) {
-        const tasaMoraDiaria = loan.mora / 100; // Ahora es porcentaje diario
-        moraAcumulada = loan.capital * tasaMoraDiaria * diasMora; // Interés simple diario
-    }
+    const pagos = loan.pagos || [];
+    const totalPagado = pagos.reduce((sum, p) => sum + p.monto, 0);
 
     const cuotaDiaria = calculateDailyPayment(loan.capital, loan.interes, loan.plazoDias);
     const totalOriginal = cuotaDiaria * loan.plazoDias;
-    totalConMora = totalOriginal + moraAcumulada;
 
-    return { status, diasMora, moraAcumulada, totalConMora, endDate };
+    let moraAcumulada = 0;
+    if (diasMora > 0 && loan.mora > 0) {
+        moraAcumulada = loan.capital * (loan.mora / 100) * diasMora; // Mora simple diaria
+    }
+
+    const totalConMora = totalOriginal + moraAcumulada;
+    const saldoPendiente = Math.max(0, totalConMora - totalPagado);
+
+    return { status, diasMora, moraAcumulada, totalConMora, endDate, saldoPendiente, totalPagado, cuotaDiaria };
 }
 
 function calculateDailyPayment(capital, interesAnual, plazoDias) {
-    if (plazoDias === 0 || interesAnual === 0) return capital / plazoDias || 0;
+    if (!interesAnual || !plazoDias) return capital / plazoDias || 0;
     const tasaDiaria = interesAnual / 100 / 365;
     return (capital * tasaDiaria) / (1 - Math.pow(1 + tasaDiaria, -plazoDias));
 }
@@ -55,92 +56,127 @@ function formatDate(date) {
     return new Date(date).toLocaleDateString('es-PE');
 }
 
-function renderLoans(filter = currentFilter) {
+function updateSummary() {
+    const todayStr = new Date().toISOString().slice(0, 10);
+    let capitalActivo = 0, cobradoHoy = 0, moraTotal = 0, activos = 0;
+
+    loans.forEach(loan => {
+        const info = getStatusAndMora(loan);
+        if (!loan.renovado && info.saldoPendiente > 0) {
+            capitalActivo += loan.capital;
+            activos++;
+        }
+        moraTotal += info.moraAcumulada;
+
+        (loan.pagos || []).forEach(p => {
+            if (p.fecha === todayStr) cobradoHoy += p.monto;
+        });
+    });
+
+    document.getElementById('capital-activo').textContent = capitalActivo.toFixed(2);
+    document.getElementById('cobrado-hoy').textContent = cobradoHoy.toFixed(2);
+    document.getElementById('mora-total').textContent = moraTotal.toFixed(2);
+    document.getElementById('prestamos-activos').textContent = activos;
+}
+
+function searchLoans() {
+    const term = document.getElementById('search-input').value.toLowerCase();
+    renderLoans(currentFilter, term);
+}
+
+function renderLoans(filter = 'todos', searchTerm = '') {
     const list = document.getElementById('loans-list');
     list.innerHTML = '';
 
-    let filteredLoans = loans;
-    if (filter === 'activos') filteredLoans = loans.filter(l => getStatusAndMora(l).status === 'verde');
-    else if (filter === 'por-vencer') filteredLoans = loans.filter(l => getStatusAndMora(l).status === 'amarillo');
-    else if (filter === 'vencidos') filteredLoans = loans.filter(l => getStatusAndMora(l).status === 'rojo');
+    let filtered = loans.filter(loan => {
+        if (filter === 'activos') return getStatusAndMora(loan).status === 'verde';
+        if (filter === 'por-vencer') return getStatusAndMora(loan).status === 'amarillo';
+        if (filter === 'vencidos') return getStatusAndMora(loan).status === 'rojo';
+        return true;
+    });
 
-    if (filteredLoans.length === 0) {
-        list.innerHTML = '<li style="text-align:center; color:#888;">No hay préstamos en esta categoría.</li>';
+    if (searchTerm) {
+        filtered = filtered.filter(loan =>
+            loan.nombre.toLowerCase().includes(searchTerm) ||
+            (loan.telefono || '').includes(searchTerm) ||
+            (loan.direccion || '').toLowerCase().includes(searchTerm)
+        );
+    }
+
+    if (filtered.length === 0) {
+        list.innerHTML = '<li style="text-align:center; color:#888;">No hay préstamos que coincidan.</li>';
         return;
     }
 
-    filteredLoans.forEach((loan, index) => {
-        const { status, diasMora, moraAcumulada, totalConMora, endDate } = getStatusAndMora(loan);
-        const cuotaDiaria = calculateDailyPayment(loan.capital, loan.interes, loan.plazoDias);
+    filtered.forEach((loan, originalIndex) => {
+        const info = getStatusAndMora(loan);
 
         const li = document.createElement('li');
-        li.classList.add('status-' + status);
+        li.classList.add('status-' + info.status);
 
-        let moraInfo = '';
-        if (diasMora > 0 && moraAcumulada > 0) {
-            moraInfo = `<br><strong style="color:#dc3545;">Mora (${diasMora} días): S/${moraAcumulada.toFixed(2)}</strong> | 
-                        Total con mora: S/${totalConMora.toFixed(2)}`;
-        }
+        const iconoRenovacion = loan.esRenovacion ? ' <span style="font-size:1.3em;">↻</span>' : '';
+        const renovadoTexto = loan.renovado ? ' <em style="color:#6c757d;">(Renovado)</em>' : '';
+
+        let moraInfo = info.diasMora > 0 && info.moraAcumulada > 0
+            ? `<br><strong style="color:#dc3545;">Mora: S/${info.moraAcumulada.toFixed(2)}</strong>`
+            : '';
+
+        const estiloCompletado = loan.renovado ? 'opacity: 0.7; text-decoration: line-through;' : '';
 
         li.innerHTML = `
-            <span class="loan-info">
-                <strong>${loan.nombre}</strong><br>
-                Prestado: S/${loan.capital.toFixed(2)} | Interés: ${loan.interes}% anual
-                ${loan.mora > 0 ? ` | Mora: ${loan.mora}% diaria` : ''}<br>
-                Plazo: ${loan.plazoDias} días | Vence: ${formatDate(endDate)}<br>
-                Cuota diaria: S/${cuotaDiaria.toFixed(2)}${moraInfo}
+            <span class="loan-info" style="${estiloCompletado}">
+                <strong>${loan.nombre}${iconoRenovacion}${renovadoTexto}</strong> - Tel: ${loan.telefono || 'N/A'}<br>
+                Prestado: S/${loan.capital.toFixed(2)} | Cuota diaria: S/${info.cuotaDiaria.toFixed(2)}<br>
+                Vence: ${formatDate(info.endDate)} | Saldo pendiente: <strong>S/${info.saldoPendiente.toFixed(2)}</strong>${moraInfo}
             </span>
             <div class="actions">
-                <button class="edit-btn" data-index="${loans.indexOf(loan)}">Editar</button>
-                <button class="delete-btn" data-index="${loans.indexOf(loan)}">Eliminar</button>
+                <button class="edit-btn" data-index="${originalIndex}">Editar</button>
+                <button class="delete-btn" data-index="${originalIndex}">Eliminar</button>
             </div>
         `;
 
-        li.addEventListener('click', (e) => {
+        li.onclick = (e) => {
             if (!e.target.matches('button')) {
-                showDetails(loan, cuotaDiaria, status, diasMora, moraAcumulada, totalConMora, endDate);
+                currentLoanIndex = originalIndex;
+                showDetails(loan, info);
             }
-        });
+        };
 
         list.appendChild(li);
     });
 
-    document.querySelectorAll('.edit-btn').forEach(btn => {
-        btn.addEventListener('click', (e) => {
+    document.querySelectorAll('.edit-btn, .delete-btn').forEach(btn => {
+        btn.onclick = (e) => {
             e.stopPropagation();
-            openEditModal(parseInt(btn.getAttribute('data-index')));
-        });
-    });
-
-    document.querySelectorAll('.delete-btn').forEach(btn => {
-        btn.addEventListener('click', (e) => {
-            e.stopPropagation();
-            deleteLoan(parseInt(btn.getAttribute('data-index')));
-        });
+            const i = parseInt(btn.dataset.index);
+            btn.classList.contains('edit-btn') ? openEditModal(i) : deleteLoan(i);
+        };
     });
 }
 
-function showDetails(loan, cuotaDiaria, status, diasMora, moraAcumulada, totalConMora, endDate) {
-    const modal = document.getElementById('modal');
+function showDetails(loan, info) {
+    currentLoanIndex = loans.indexOf(loan);
     const body = document.getElementById('modal-body');
+    const historyList = document.getElementById('payment-history');
+    historyList.innerHTML = '';
 
-    let statusText = status === 'verde' ? '<span style="color:#28a745;">Activo</span>' :
-                     status === 'amarillo' ? '<span style="color:#ffc107;"><strong>Por vencer</strong></span>' :
+    (loan.pagos || []).forEach(p => {
+        const li = document.createElement('li');
+        li.textContent = `${p.fecha} - Pagó S/${p.monto.toFixed(2)}`;
+        historyList.appendChild(li);
+    });
+
+    let statusText = info.status === 'verde' ? '<span style="color:#28a745;">Activo</span>' :
+                     info.status === 'amarillo' ? '<span style="color:#ffc107;"><strong>Por vencer</strong></span>' :
                      '<span style="color:#dc3545;"><strong>Vencido</strong></span>';
 
-    let moraDetalle = '';
-    if (diasMora > 0 && moraAcumulada > 0) {
-        moraDetalle = `
-            <p><strong>Días en mora:</strong> ${diasMora}</p>
-            <p><strong>Tasa de mora diaria:</strong> ${loan.mora}%</p>
-            <p><strong>Monto de mora acumulada:</strong> <strong style="color:#dc3545;">S/${moraAcumulada.toFixed(2)}</strong></p>
-            <p><strong>Total a pagar con mora:</strong> <strong style="color:#dc3545;">S/${totalConMora.toFixed(2)}</strong></p>
-        `;
-    } else if (loan.mora > 0) {
-        moraDetalle = `<p><strong>Tasa de mora diaria configurada:</strong> ${loan.mora}% (se aplica al vencimiento)</p>`;
-    }
+    let renovadoNota = loan.renovado ? '<p style="color:#6c757d;"><em>Este préstamo fue renovado y cerrado.</em></p>' : '';
+    let botonRenovar = !loan.renovado && info.saldoPendiente > 0
+        ? `<button onclick="renewLoan(${currentLoanIndex})" style="background:#007bff; color:white; padding:12px; border:none; border-radius:5px; width:100%; margin-top:10px; font-size:1.1em;">Renovar con Saldo Pendiente</button>`
+        : '';
 
     body.innerHTML = `
+        ${renovadoNota}
         <p><strong>Nombre:</strong> ${loan.nombre}</p>
         <p><strong>Teléfono:</strong> ${loan.telefono || 'No registrado'}</p>
         <p><strong>Dirección:</strong> ${loan.direccion || 'No registrado'}</p>
@@ -149,14 +185,94 @@ function showDetails(loan, cuotaDiaria, status, diasMora, moraAcumulada, totalCo
         ${loan.mora > 0 ? `<p><strong>Mora diaria:</strong> ${loan.mora}%</p>` : ''}
         <p><strong>Plazo:</strong> ${loan.plazoDias} días</p>
         <p><strong>Fecha préstamo:</strong> ${formatDate(loan.fecha)}</p>
-        <p><strong>Fecha vencimiento:</strong> ${formatDate(endDate)}</p>
+        <p><strong>Fecha vencimiento:</strong> ${formatDate(info.endDate)}</p>
         <p><strong>Estado:</strong> ${statusText}</p>
         <hr>
-        <p><strong>Cuota diaria:</strong> <strong style="color:#007bff;">S/${cuotaDiaria.toFixed(2)}</strong></p>
-        ${moraDetalle}
+        <p><strong>Cuota diaria:</strong> <strong style="color:#007bff;">S/${info.cuotaDiaria.toFixed(2)}</strong></p>
+        <p><strong>Saldo pendiente actual:</strong> <strong style="font-size:1.4em; color:#dc3545;">S/${info.saldoPendiente.toFixed(2)}</strong></p>
+        ${info.moraAcumulada > 0 ? `<p><strong>Mora acumulada:</strong> S/${info.moraAcumulada.toFixed(2)}</p>` : ''}
+        <hr>
+        <h3>Historial de Pagos</h3>
+        <ul id="payment-history"></ul>
+        ${!loan.renovado ? `<button onclick="addPayment(${currentLoanIndex})" style="background:#28a745; color:white; padding:12px; border:none; border-radius:5px; width:100%; margin-top:10px; font-size:1.1em;">+ Registrar Pago Hoy</button>` : ''}
+        ${botonRenovar}
         <p><strong>Notas:</strong> ${loan.notas || 'Ninguna'}</p>
     `;
-    modal.style.display = 'block';
+
+    // Recargar historial
+    (loan.pagos || []).forEach(p => {
+        const li = document.createElement('li');
+        li.textContent = `${p.fecha} - Pagó S/${p.monto.toFixed(2)}`;
+        document.getElementById('payment-history').appendChild(li);
+    });
+
+    document.getElementById('modal').style.display = 'block';
+}
+
+function addPayment(index) {
+    const loan = loans[index];
+    const info = getStatusAndMora(loan);
+    const montoStr = prompt(`¿Cuánto pagó hoy?\n(Cuota sugerida: S/${info.cuotaDiaria.toFixed(2)})`, info.cuotaDiaria.toFixed(2));
+    if (montoStr && !isNaN(montoStr) && parseFloat(montoStr) > 0) {
+        const monto = parseFloat(montoStr);
+        if (!loan.pagos) loan.pagos = [];
+        loan.pagos.push({
+            fecha: new Date().toISOString().slice(0, 10),
+            monto: monto
+        });
+        saveLoans();
+        renderLoans();
+        alert(`Pago de S/${monto.toFixed(2)} registrado correctamente.`);
+        document.getElementById('modal').style.display = 'none';
+    }
+}
+
+function renewLoan(index) {
+    const loan = loans[index];
+    const info = getStatusAndMora(loan);
+
+    if (loan.renovado) {
+        alert("Este préstamo ya fue renovado.");
+        return;
+    }
+
+    if (info.saldoPendiente <= 0) {
+        alert("No hay saldo pendiente para renovar.");
+        return;
+    }
+
+    const nuevoPlazoStr = prompt("Nuevo plazo en días para la renovación:", loan.plazoDias);
+    if (!nuevoPlazoStr || isNaN(nuevoPlazoStr) || parseInt(nuevoPlazoStr) < 1) {
+        alert("Plazo inválido.");
+        return;
+    }
+
+    if (confirm(`Renovar préstamo:\nNuevo capital: S/${info.saldoPendiente.toFixed(2)}\nPlazo: ${nuevoPlazoStr} días`)) {
+        // Marcar antiguo como renovado
+        loan.renovado = true;
+        loan.notas = `[RENOVADO ${new Date().toLocaleDateString('es-PE')}] ` + (loan.notas || "");
+
+        // Crear nuevo préstamo
+        const nuevoLoan = {
+            nombre: loan.nombre,
+            telefono: loan.telefono,
+            direccion: loan.direccion,
+            capital: info.saldoPendiente,
+            interes: loan.interes,
+            mora: loan.mora,
+            plazoDias: parseInt(nuevoPlazoStr),
+            fecha: new Date().toISOString().slice(0, 10),
+            notas: `Renovación automática del préstamo anterior (capital original: S/${loan.capital.toFixed(2)})`,
+            pagos: [],
+            esRenovacion: true
+        };
+
+        loans.push(nuevoLoan);
+        saveLoans();
+        renderLoans();
+        alert("¡Préstamo renovado con éxito!\nEl antiguo queda en historial como referencia.");
+        document.getElementById('modal').style.display = 'none';
+    }
 }
 
 function openEditModal(index) {
@@ -174,7 +290,22 @@ function openEditModal(index) {
     document.getElementById('edit-modal').style.display = 'block';
 }
 
-// Agregar nuevo
+function deleteLoan(index) {
+    if (confirm('¿Seguro que quieres eliminar este préstamo permanentemente?')) {
+        loans.splice(index, 1);
+        saveLoans();
+        renderLoans();
+    }
+}
+
+function filterLoans(type) {
+    currentFilter = type;
+    document.querySelectorAll('.filter-btn').forEach(btn => btn.classList.remove('active'));
+    document.querySelector(`.filter-btn[onclick="filterLoans('${type}')"]`).classList.add('active');
+    renderLoans(type);
+}
+
+// Agregar nuevo préstamo
 document.getElementById('loan-form').addEventListener('submit', (e) => {
     e.preventDefault();
     const loan = {
@@ -183,10 +314,13 @@ document.getElementById('loan-form').addEventListener('submit', (e) => {
         direccion: document.getElementById('direccion').value.trim(),
         capital: parseFloat(document.getElementById('capital').value),
         interes: parseFloat(document.getElementById('interes').value),
-        mora: parseFloat(document.getElementById('mora').value) || 0,  // Ahora es % diario
+        mora: parseFloat(document.getElementById('mora').value) || 0,
         plazoDias: parseInt(document.getElementById('plazo-dias').value),
-        fecha: document.getElementById('fecha').value,
-        notas: document.getElementById('notas').value.trim()
+        fecha: document.getElementById('fecha').value || new Date().toISOString().slice(0, 10),
+        notas: document.getElementById('notas').value.trim(),
+        pagos: [],
+        renovado: false,
+        esRenovacion: false
     };
     loans.push(loan);
     saveLoans();
@@ -194,11 +328,12 @@ document.getElementById('loan-form').addEventListener('submit', (e) => {
     e.target.reset();
 });
 
-// Editar
+// Editar préstamo
 document.getElementById('edit-form').addEventListener('submit', (e) => {
     e.preventDefault();
     const index = parseInt(document.getElementById('edit-index').value);
     loans[index] = {
+        ...loans[index],
         nombre: document.getElementById('edit-nombre').value.trim(),
         telefono: document.getElementById('edit-telefono').value.trim(),
         direccion: document.getElementById('edit-direccion').value.trim(),
@@ -214,27 +349,15 @@ document.getElementById('edit-form').addEventListener('submit', (e) => {
     document.getElementById('edit-modal').style.display = 'none';
 });
 
-function deleteLoan(index) {
-    if (confirm('¿Seguro que quieres eliminar este préstamo?')) {
-        loans.splice(index, 1);
-        saveLoans();
-        renderLoans();
-    }
-}
-
-function filterLoans(type) {
-    currentFilter = type;
-    document.querySelectorAll('.filter-btn').forEach(btn => btn.classList.remove('active'));
-    document.querySelector(`.filter-btn[onclick="filterLoans('${type}')"]`).classList.add('active');
-    renderLoans(type);
-}
-
 // Cerrar modales
 document.querySelector('.close').addEventListener('click', () => document.getElementById('modal').style.display = 'none');
 document.querySelector('.close-edit').addEventListener('click', () => document.getElementById('edit-modal').style.display = 'none');
+
 window.addEventListener('click', (e) => {
     if (e.target === document.getElementById('modal')) document.getElementById('modal').style.display = 'none';
     if (e.target === document.getElementById('edit-modal')) document.getElementById('edit-modal').style.display = 'none';
 });
 
+// Inicializar
 renderLoans();
+updateSummary();
