@@ -164,26 +164,18 @@ function renderLoans(filter = 'todos', searchTerm = '') {
 
 function showDetails(loan, info, cuotasPagadas, totalCuotas) {
     currentLoanIndex = loans.indexOf(loan);
-    const body = document.getElementById('modal-body');
-    const historyList = document.getElementById('payment-history');
-    historyList.innerHTML = '';
 
-    (loan.pagos || []).forEach(p => {
-        const li = document.createElement('li');
-        li.textContent = `${p.fecha} - Pagó S/${p.monto.toFixed(2)}`;
-        historyList.appendChild(li);
-    });
+    const modalBody = document.getElementById('modal-body');
+    const historyList = document.getElementById('payment-history');
+    historyList.innerHTML = '';  // Limpiar historial existente
 
     let statusText = info.status === 'verde' ? '<span style="color:#28a745;">Activo</span>' :
                      info.status === 'amarillo' ? '<span style="color:#ffc107;"><strong>Por vencer</strong></span>' :
                      '<span style="color:#dc3545;"><strong>Vencido</strong></span>';
 
     let renovadoNota = loan.renovado ? '<p style="color:#6c757d;"><em>Este préstamo fue renovado y cerrado.</em></p>' : '';
-    let botonRenovar = !loan.renovado && info.saldoPendiente > 0
-        ? `<button onclick="renewLoan(${currentLoanIndex})" style="background:#007bff; color:white; padding:12px; border:none; border-radius:5px; width:100%; margin-top:10px; font-size:1.1em;">Renovar con Saldo Pendiente</button>`
-        : '';
 
-    body.innerHTML = `
+    modalBody.innerHTML = `
         ${renovadoNota}
         <p><strong>Nombre:</strong> ${loan.nombre}</p>
         <p><strong>Teléfono:</strong> ${loan.telefono || 'No registrado'}</p>
@@ -195,8 +187,8 @@ function showDetails(loan, info, cuotasPagadas, totalCuotas) {
         <p><strong>Fecha préstamo:</strong> ${formatDate(loan.fecha)}</p>
         <p><strong>Fecha vencimiento:</strong> ${formatDate(info.endDate)}</p>
         <p><strong>Estado:</strong> ${statusText}</p>
-        <hr>
         <p><strong>Cuotas pagadas:</strong> ${cuotasPagadas} de ${totalCuotas}</p>
+        <hr>
         <p><strong>Cuota diaria:</strong> <strong style="color:#007bff;">S/${info.cuotaDiaria.toFixed(2)}</strong></p>
         <p><strong>Saldo pendiente actual:</strong> <strong style="font-size:1.4em; color:#dc3545;">S/${info.saldoPendiente.toFixed(2)}</strong></p>
         ${info.moraAcumulada > 0 ? `<p><strong>Mora acumulada:</strong> S/${info.moraAcumulada.toFixed(2)}</p>` : ''}
@@ -204,11 +196,11 @@ function showDetails(loan, info, cuotasPagadas, totalCuotas) {
         <h3>Historial de Pagos</h3>
         <ul id="payment-history"></ul>
         ${!loan.renovado ? `<button onclick="addPayment(${currentLoanIndex})" style="background:#28a745; color:white; padding:12px; border:none; border-radius:5px; width:100%; margin-top:10px; font-size:1.1em;">+ Registrar Pago Hoy</button>` : ''}
-        ${botonRenovar}
+        ${!loan.renovado && info.saldoPendiente > 0 ? `<button onclick="renewLoan(${currentLoanIndex})" style="background:#007bff; color:white; padding:12px; border:none; border-radius:5px; width:100%; margin-top:10px; font-size:1.1em;">Renovar con Saldo Pendiente</button>` : ''}
         <p><strong>Notas:</strong> ${loan.notas || 'Ninguna'}</p>
     `;
 
-    // Recargar historial (por seguridad)
+    // Repoblar el historial de pagos
     (loan.pagos || []).forEach(p => {
         const li = document.createElement('li');
         li.textContent = `${p.fecha} - Pagó S/${p.monto.toFixed(2)}`;
