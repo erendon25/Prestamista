@@ -60,12 +60,13 @@ function formatDate(date) {
 
 function updateSummary() {
     const todayStr = new Date().toISOString().slice(0, 10);
-    let capitalActivo = 0, cobradoHoy = 0, moraTotal = 0, activos = 0;
+    let capitalActivo = 0, cobradoHoy = 0, moraTotal = 0, totalPorCobrar = 0, activos = 0;
 
     loans.forEach(loan => {
         const info = getStatusAndMora(loan);
         if (!loan.renovado && info.saldoPendiente > 0) {
             capitalActivo += loan.capital;
+            totalPorCobrar += info.saldoPendiente;
             activos++;
         }
         moraTotal += info.moraAcumulada;
@@ -78,6 +79,7 @@ function updateSummary() {
     document.getElementById('capital-activo').textContent = capitalActivo.toFixed(2);
     document.getElementById('cobrado-hoy').textContent = cobradoHoy.toFixed(2);
     document.getElementById('mora-total').textContent = moraTotal.toFixed(2);
+    document.getElementById('total-por-cobrar').textContent = totalPorCobrar.toFixed(2);
     document.getElementById('prestamos-activos').textContent = activos;
 }
 
@@ -113,7 +115,6 @@ function renderLoans(filter = 'todos', searchTerm = '') {
     filtered.forEach((loan, originalIndex) => {
         const info = getStatusAndMora(loan);
 
-        // Cálculo del contador de cuotas pagadas
         const diasConPago = new Set((loan.pagos || []).map(p => p.fecha)).size;
         const cuotasPagadas = diasConPago;
         const totalCuotas = loan.plazoDias;
@@ -166,14 +167,19 @@ function showDetails(loan, info, cuotasPagadas, totalCuotas) {
     currentLoanIndex = loans.indexOf(loan);
 
     const modalBody = document.getElementById('modal-body');
-    const historyList = document.getElementById('payment-history');
-    historyList.innerHTML = '';  // Limpiar historial existente
+    if (!modalBody) return;  // Seguridad adicional
 
     let statusText = info.status === 'verde' ? '<span style="color:#28a745;">Activo</span>' :
                      info.status === 'amarillo' ? '<span style="color:#ffc107;"><strong>Por vencer</strong></span>' :
                      '<span style="color:#dc3545;"><strong>Vencido</strong></span>';
 
     let renovadoNota = loan.renovado ? '<p style="color:#6c757d;"><em>Este préstamo fue renovado y cerrado.</em></p>' : '';
+
+    let botonPago = !loan.renovado ? 
+        `<button onclick="addPayment(${currentLoanIndex})" style="background:#28a745; color:white; padding:12px; border:none; border-radius:5px; width:100%; margin-top:10px; font-size:1.1em;">+ Registrar Pago Hoy</button>` : '';
+
+    let botonRenovar = !loan.renovado && info.saldoPendiente > 0 ? 
+        `<button onclick="renewLoan(${currentLoanIndex})" style="background:#007bff; color:white; padding:12px; border:none; border-radius:5px; width:100%; margin-top:10px; font-size:1.1em;">Renovar con Saldo Pendiente</button>` : '';
 
     modalBody.innerHTML = `
         ${renovadoNota}
@@ -195,17 +201,21 @@ function showDetails(loan, info, cuotasPagadas, totalCuotas) {
         <hr>
         <h3>Historial de Pagos</h3>
         <ul id="payment-history"></ul>
-        ${!loan.renovado ? `<button onclick="addPayment(${currentLoanIndex})" style="background:#28a745; color:white; padding:12px; border:none; border-radius:5px; width:100%; margin-top:10px; font-size:1.1em;">+ Registrar Pago Hoy</button>` : ''}
-        ${!loan.renovado && info.saldoPendiente > 0 ? `<button onclick="renewLoan(${currentLoanIndex})" style="background:#007bff; color:white; padding:12px; border:none; border-radius:5px; width:100%; margin-top:10px; font-size:1.1em;">Renovar con Saldo Pendiente</button>` : ''}
+        ${botonPago}
+        ${botonRenovar}
         <p><strong>Notas:</strong> ${loan.notas || 'Ninguna'}</p>
     `;
 
-    // Repoblar el historial de pagos
-    (loan.pagos || []).forEach(p => {
-        const li = document.createElement('li');
-        li.textContent = `${p.fecha} - Pagó S/${p.monto.toFixed(2)}`;
-        document.getElementById('payment-history').appendChild(li);
-    });
+    // Poblar el historial de pagos
+    const historyList = document.getElementById('payment-history');
+    if (historyList) {
+        historyList.innerHTML = '';
+        (loan.pagos || []).forEach(p => {
+            const li = document.createElement('li');
+            li.textContent = `${p.fecha} - Pagó S/${p.monto.toFixed(2)}`;
+            historyList.appendChild(li);
+        });
+    }
 
     document.getElementById('modal').style.display = 'block';
 }
@@ -349,30 +359,6 @@ document.getElementById('edit-form').addEventListener('submit', (e) => {
     renderLoans();
     document.getElementById('edit-modal').style.display = 'none';
 });
-function updateSummary() {
-    const todayStr = new Date().toISOString().slice(0, 10);
-    let capitalActivo = 0, cobradoHoy = 0, moraTotal = 0, totalPorCobrar = 0, activos = 0;
-
-    loans.forEach(loan => {
-        const info = getStatusAndMora(loan);
-        if (!loan.renovado && info.saldoPendiente > 0) {
-            capitalActivo += loan.capital;
-            totalPorCobrar += info.saldoPendiente;  // Suma del saldo pendiente (interés + mora - pagos)
-            activos++;
-        }
-        moraTotal += info.moraAcumulada;
-
-        (loan.pagos || []).forEach(p => {
-            if (p.fecha === todayStr) cobradoHoy += p.monto;
-        });
-    });
-
-    document.getElementById('capital-activo').textContent = capitalActivo.toFixed(2);
-    document.getElementById('cobrado-hoy').textContent = cobradoHoy.toFixed(2);
-    document.getElementById('mora-total').textContent = moraTotal.toFixed(2);
-    document.getElementById('total-por-cobrar').textContent = totalPorCobrar.toFixed(2);  // Nueva línea
-    document.getElementById('prestamos-activos').textContent = activos;
-}
 
 // Cerrar modales
 document.querySelector('.close').addEventListener('click', () => document.getElementById('modal').style.display = 'none');
