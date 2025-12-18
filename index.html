@@ -9,43 +9,43 @@
 <body>
     <div class="container">
         <h1>Control de Préstamos</h1>
+        
         <div class="summary">
-    <div class="summary">
-    <h2>Resumen Financiero</h2>
-    <div id="summary-stats">
-        Capital activo: S/<span id="capital-activo">0.00</span> |
-        Cobrado hoy: S/<span id="cobrado-hoy">0.00</span> |
-        Mora total: S/<span id="mora-total">0.00</span> |
-        Total por cobrar: S/<span id="total-por-cobrar">0.00</span>|
-        Préstamos activos: <span id="prestamos-activos">0</span>
-    </div>
-</div>
-</div>
+            <h2>Resumen Financiero</h2>
+            <div id="summary-stats">
+                Capital activo: S/<span id="capital-activo">0.00</span> |
+                Cobrado hoy: S/<span id="cobrado-hoy">0.00</span> |
+                Mora total: S/<span id="mora-total">0.00</span> |
+                Total por cobrar: S/<span id="total-por-cobrar">0.00</span> |
+                Préstamos activos: <span id="prestamos-activos">0</span>
+            </div>
+        </div>
 
-<div class="search-bar">
-    <input type="text" id="search-input" placeholder="Buscar por nombre, teléfono o dirección..." onkeyup="searchLoans()">
-</div>
+        <div class="search-bar">
+            <input type="text" id="search-input" placeholder="Buscar por nombre, teléfono o dirección..." onkeyup="searchLoans()">
+        </div>
         
         <h2>Agregar Nuevo Préstamo</h2>
         <form id="loan-form">
             <input type="text" id="nombre" placeholder="Nombre del deudor" required>
-            <input type="number" id="Telefono" placeholder="Telefono" pattern="[0-9]*">
+            <input type="tel" id="telefono" placeholder="Teléfono" inputmode="numeric" pattern="[0-9]*" title="Solo se permiten números">
             <input type="text" id="direccion" placeholder="Dirección">
             <input type="number" id="capital" placeholder="Cantidad prestada" required step="0.01">
             <input type="number" id="interes" placeholder="Interés diario (%)" required step="0.01">
             <input type="number" id="mora" placeholder="Porcentaje de mora diaria (%) - opcional" step="0.01" min="0">
             <input type="number" id="plazo-dias" placeholder="Plazo en días" required min="1">
-            <input type="date" id="fecha" placeholder="Fecha del préstamo">
+            <input type="date" id="fecha">
             <textarea id="notas" placeholder="Notas adicionales"></textarea>
             <button type="submit">Agregar Préstamo</button>
         </form>
-       <h2>Lista de Préstamos</h2>
-<div class="filters">
-    <button onclick="filterLoans('todos')" class="filter-btn active">Todos</button>
-    <button onclick="filterLoans('activos')" class="filter-btn">Activos (en verde)</button>
-    <button onclick="filterLoans('por-vencer')" class="filter-btn">Por vencer</button>
-    <button onclick="filterLoans('vencidos')" class="filter-btn">Vencidos (en rojo)</button>
-</div>
+        
+        <h2>Lista de Préstamos</h2>
+        <div class="filters">
+            <button onclick="filterLoans('todos')" class="filter-btn active">Todos</button>
+            <button onclick="filterLoans('activos')" class="filter-btn">Activos (en verde)</button>
+            <button onclick="filterLoans('por-vencer')" class="filter-btn">Por vencer</button>
+            <button onclick="filterLoans('vencidos')" class="filter-btn">Vencidos (en rojo)</button>
+        </div>
         <ul id="loans-list"></ul>
     </div>
     
@@ -55,34 +55,32 @@
             <span class="close">&times;</span>
             <h2>Detalles del Préstamo</h2>
             <div id="modal-body">
-                <hr>
-<h3>Historial de Pagos</h3>
-<ul id="payment-history"></ul>
-<button onclick="addPayment(currentLoanIndex)" style="background:#28a745; color:white; padding:10px; border:none; border-radius:5px;">+ Registrar Pago Hoy</button>
-<button onclick="renewLoan(currentLoanIndex)" style="background:#007bff; color:white; padding:10px; border:none; border-radius:5px; margin-left:10px;">Renovar Préstamo</button>
+                <!-- Contenido dinámico -->
             </div>
         </div>
     </div>
+    
     <!-- Modal para editar -->
-<div id="edit-modal" class="modal">
-    <div class="modal-content">
-        <span class="close-edit">&times;</span>
-        <h2>Editar Préstamo</h2>
-        <form id="edit-form">
-            <input type="hidden" id="edit-index">
-            <input type="text" id="edit-nombre" placeholder="Nombre del deudor" required>
-            <input type="number" id="edit-telefono" placeholder="Telefono" pattern="[0-9]*">
-            <input type="text" id="edit-direccion" placeholder="Dirección">
-            <input type="number" id="edit-capital" placeholder="Cantidad prestada" required step="0.01">
-            <input type="number" id="edit-interes" placeholder="Interés diario (%)" required step="0.01">
-            <input type="number" id="edit-mora" placeholder="Porcentaje de mora diaria (%) - opcional" step="0.01" min="0">
-            <input type="number" id="edit-plazo" placeholder="Plazo en días" required min="1">
-            <input type="date" id="edit-fecha" placeholder="Fecha del préstamo">
-            <textarea id="edit-notas" placeholder="Notas adicionales"></textarea>
-            <button type="submit">Guardar Cambios</button>
-        </form>
+    <div id="edit-modal" class="modal">
+        <div class="modal-content">
+            <span class="close-edit">&times;</span>
+            <h2>Editar Préstamo</h2>
+            <form id="edit-form">
+                <input type="hidden" id="edit-index">
+                <input type="text" id="edit-nombre" placeholder="Nombre del deudor" required>
+                <input type="tel" id="edit-telefono" placeholder="Teléfono" inputmode="numeric" pattern="[0-9]*" title="Solo se permiten números">
+                <input type="text" id="edit-direccion" placeholder="Dirección">
+                <input type="number" id="edit-capital" placeholder="Cantidad prestada" required step="0.01">
+                <input type="number" id="edit-interes" placeholder="Interés diario (%)" required step="0.01">
+                <input type="number" id="edit-mora" placeholder="Porcentaje de mora diaria (%) - opcional" step="0.01" min="0">
+                <input type="number" id="edit-plazo" placeholder="Plazo en días" required min="1">
+                <input type="date" id="edit-fecha">
+                <textarea id="edit-notas" placeholder="Notas adicionales"></textarea>
+                <button type="submit">Guardar Cambios</button>
+            </form>
+        </div>
     </div>
-</div>
-<script src="script.js"></script>
+
+    <script src="script.js"></script>
 </body>
 </html>
