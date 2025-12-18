@@ -45,12 +45,13 @@ function getStatusAndMora(loan) {
     return { status, diasMora, moraAcumulada, totalConMora, endDate, saldoPendiente, totalPagado, cuotaDiaria };
 }
 
-function calculateDailyPayment(capital, interesDiarioPorcentaje, plazoDias) {
-    if (!interesDiarioPorcentaje || interesDiarioPorcentaje <= 0) {
+function calculateDailyPayment(capital, interesPorcentaje, plazoDias) {
+    if (!interesPorcentaje || interesPorcentaje <= 0 || !plazoDias) {
         return capital / plazoDias || 0;
     }
-    const tasaDiaria = interesDiarioPorcentaje / 100;
-    return capital * tasaDiaria;
+    const interesTotal = capital * (interesPorcentaje / 100);
+    const montoTotal = capital + interesTotal;
+    return montoTotal / plazoDias;
 }
 
 function formatDate(date) {
