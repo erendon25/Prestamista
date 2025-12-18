@@ -10,13 +10,16 @@
     <div class="container">
         <h1>Control de Préstamos</h1>
         <div class="summary">
+    <div class="summary">
     <h2>Resumen Financiero</h2>
     <div id="summary-stats">
         Capital activo: S/<span id="capital-activo">0.00</span> |
         Cobrado hoy: S/<span id="cobrado-hoy">0.00</span> |
         Mora total: S/<span id="mora-total">0.00</span> |
+        Total por cobrar: S/<span id="total-por-cobrar">0.00</span>|
         Préstamos activos: <span id="prestamos-activos">0</span>
     </div>
+</div>
 </div>
 
 <div class="search-bar">
@@ -26,7 +29,7 @@
         <h2>Agregar Nuevo Préstamo</h2>
         <form id="loan-form">
             <input type="text" id="nombre" placeholder="Nombre del deudor" required>
-            <input type="tel" id="telefono" placeholder="Teléfono">
+            <input type="number" id="Telefono" placeholder="Telefono" pattern="[0-9]*">
             <input type="text" id="direccion" placeholder="Dirección">
             <input type="number" id="capital" placeholder="Cantidad prestada" required step="0.01">
             <input type="number" id="interes" placeholder="Interés diario (%)" required step="0.01">
@@ -68,7 +71,7 @@
         <form id="edit-form">
             <input type="hidden" id="edit-index">
             <input type="text" id="edit-nombre" placeholder="Nombre del deudor" required>
-            <input type="tel" id="edit-telefono" placeholder="Teléfono">
+            <input type="number" id="edit-telefono" placeholder="Telefono" pattern="[0-9]*">
             <input type="text" id="edit-direccion" placeholder="Dirección">
             <input type="number" id="edit-capital" placeholder="Cantidad prestada" required step="0.01">
             <input type="number" id="edit-interes" placeholder="Interés diario (%)" required step="0.01">

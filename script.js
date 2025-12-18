@@ -36,7 +36,7 @@ function getStatusAndMora(loan) {
 
     let moraAcumulada = 0;
     if (diasMora > 0 && loan.mora > 0) {
-        moraAcumulada = loan.capital * (loan.mora / 100) * diasMora; // Mora simple diaria
+        moraAcumulada = loan.capital * (loan.mora / 100) * diasMora;
     }
 
     const totalConMora = totalOriginal + moraAcumulada;
@@ -45,10 +45,12 @@ function getStatusAndMora(loan) {
     return { status, diasMora, moraAcumulada, totalConMora, endDate, saldoPendiente, totalPagado, cuotaDiaria };
 }
 
-function calculateDailyPayment(capital, interesAnual, plazoDias) {
-    if (!interesAnual || !plazoDias) return capital / plazoDias || 0;
-    const tasaDiaria = interesAnual / 100 / 365;
-    return (capital * tasaDiaria) / (1 - Math.pow(1 + tasaDiaria, -plazoDias));
+function calculateDailyPayment(capital, interesDiarioPorcentaje, plazoDias) {
+    if (!interesDiarioPorcentaje || interesDiarioPorcentaje <= 0) {
+        return capital / plazoDias || 0;
+    }
+    const tasaDiaria = interesDiarioPorcentaje / 100;
+    return capital * tasaDiaria;
 }
 
 function formatDate(date) {
@@ -98,7 +100,7 @@ function renderLoans(filter = 'todos', searchTerm = '') {
     if (searchTerm) {
         filtered = filtered.filter(loan =>
             loan.nombre.toLowerCase().includes(searchTerm) ||
-            (loan.telefono || '').includes(searchTerm) ||
+            (loan.telefono || '').toString().includes(searchTerm) ||
             (loan.direccion || '').toLowerCase().includes(searchTerm)
         );
     }
@@ -110,6 +112,11 @@ function renderLoans(filter = 'todos', searchTerm = '') {
 
     filtered.forEach((loan, originalIndex) => {
         const info = getStatusAndMora(loan);
+
+        // Cálculo del contador de cuotas pagadas
+        const diasConPago = new Set((loan.pagos || []).map(p => p.fecha)).size;
+        const cuotasPagadas = diasConPago;
+        const totalCuotas = loan.plazoDias;
 
         const li = document.createElement('li');
         li.classList.add('status-' + info.status);
@@ -127,6 +134,7 @@ function renderLoans(filter = 'todos', searchTerm = '') {
             <span class="loan-info" style="${estiloCompletado}">
                 <strong>${loan.nombre}${iconoRenovacion}${renovadoTexto}</strong> - Tel: ${loan.telefono || 'N/A'}<br>
                 Prestado: S/${loan.capital.toFixed(2)} | Cuota diaria: S/${info.cuotaDiaria.toFixed(2)}<br>
+                <strong>Cuotas pagadas: ${cuotasPagadas} de ${totalCuotas}</strong><br>
                 Vence: ${formatDate(info.endDate)} | Saldo pendiente: <strong>S/${info.saldoPendiente.toFixed(2)}</strong>${moraInfo}
             </span>
             <div class="actions">
@@ -138,7 +146,7 @@ function renderLoans(filter = 'todos', searchTerm = '') {
         li.onclick = (e) => {
             if (!e.target.matches('button')) {
                 currentLoanIndex = originalIndex;
-                showDetails(loan, info);
+                showDetails(loan, info, cuotasPagadas, totalCuotas);
             }
         };
 
@@ -154,7 +162,7 @@ function renderLoans(filter = 'todos', searchTerm = '') {
     });
 }
 
-function showDetails(loan, info) {
+function showDetails(loan, info, cuotasPagadas, totalCuotas) {
     currentLoanIndex = loans.indexOf(loan);
     const body = document.getElementById('modal-body');
     const historyList = document.getElementById('payment-history');
@@ -181,13 +189,14 @@ function showDetails(loan, info) {
         <p><strong>Teléfono:</strong> ${loan.telefono || 'No registrado'}</p>
         <p><strong>Dirección:</strong> ${loan.direccion || 'No registrado'}</p>
         <p><strong>Capital prestado:</strong> S/${loan.capital.toFixed(2)}</p>
-        <p><strong>Interés anual:</strong> ${loan.interes}%</p>
+        <p><strong>Interés diario:</strong> ${loan.interes}%</p>
         ${loan.mora > 0 ? `<p><strong>Mora diaria:</strong> ${loan.mora}%</p>` : ''}
         <p><strong>Plazo:</strong> ${loan.plazoDias} días</p>
         <p><strong>Fecha préstamo:</strong> ${formatDate(loan.fecha)}</p>
         <p><strong>Fecha vencimiento:</strong> ${formatDate(info.endDate)}</p>
         <p><strong>Estado:</strong> ${statusText}</p>
         <hr>
+        <p><strong>Cuotas pagadas:</strong> ${cuotasPagadas} de ${totalCuotas}</p>
         <p><strong>Cuota diaria:</strong> <strong style="color:#007bff;">S/${info.cuotaDiaria.toFixed(2)}</strong></p>
         <p><strong>Saldo pendiente actual:</strong> <strong style="font-size:1.4em; color:#dc3545;">S/${info.saldoPendiente.toFixed(2)}</strong></p>
         ${info.moraAcumulada > 0 ? `<p><strong>Mora acumulada:</strong> S/${info.moraAcumulada.toFixed(2)}</p>` : ''}
@@ -199,7 +208,7 @@ function showDetails(loan, info) {
         <p><strong>Notas:</strong> ${loan.notas || 'Ninguna'}</p>
     `;
 
-    // Recargar historial
+    // Recargar historial (por seguridad)
     (loan.pagos || []).forEach(p => {
         const li = document.createElement('li');
         li.textContent = `${p.fecha} - Pagó S/${p.monto.toFixed(2)}`;
@@ -248,11 +257,9 @@ function renewLoan(index) {
     }
 
     if (confirm(`Renovar préstamo:\nNuevo capital: S/${info.saldoPendiente.toFixed(2)}\nPlazo: ${nuevoPlazoStr} días`)) {
-        // Marcar antiguo como renovado
         loan.renovado = true;
         loan.notas = `[RENOVADO ${new Date().toLocaleDateString('es-PE')}] ` + (loan.notas || "");
 
-        // Crear nuevo préstamo
         const nuevoLoan = {
             nombre: loan.nombre,
             telefono: loan.telefono,
@@ -308,9 +315,10 @@ function filterLoans(type) {
 // Agregar nuevo préstamo
 document.getElementById('loan-form').addEventListener('submit', (e) => {
     e.preventDefault();
+    const telInput = document.getElementById('telefono').value.replace(/\D/g, '').trim();
     const loan = {
         nombre: document.getElementById('nombre').value.trim(),
-        telefono: document.getElementById('telefono').value.trim(),
+        telefono: telInput || null,
         direccion: document.getElementById('direccion').value.trim(),
         capital: parseFloat(document.getElementById('capital').value),
         interes: parseFloat(document.getElementById('interes').value),
@@ -332,10 +340,11 @@ document.getElementById('loan-form').addEventListener('submit', (e) => {
 document.getElementById('edit-form').addEventListener('submit', (e) => {
     e.preventDefault();
     const index = parseInt(document.getElementById('edit-index').value);
+    const telInput = document.getElementById('edit-telefono').value.replace(/\D/g, '').trim();
     loans[index] = {
         ...loans[index],
         nombre: document.getElementById('edit-nombre').value.trim(),
-        telefono: document.getElementById('edit-telefono').value.trim(),
+        telefono: telInput || null,
         direccion: document.getElementById('edit-direccion').value.trim(),
         capital: parseFloat(document.getElementById('edit-capital').value),
         interes: parseFloat(document.getElementById('edit-interes').value),
@@ -348,6 +357,30 @@ document.getElementById('edit-form').addEventListener('submit', (e) => {
     renderLoans();
     document.getElementById('edit-modal').style.display = 'none';
 });
+function updateSummary() {
+    const todayStr = new Date().toISOString().slice(0, 10);
+    let capitalActivo = 0, cobradoHoy = 0, moraTotal = 0, totalPorCobrar = 0, activos = 0;
+
+    loans.forEach(loan => {
+        const info = getStatusAndMora(loan);
+        if (!loan.renovado && info.saldoPendiente > 0) {
+            capitalActivo += loan.capital;
+            totalPorCobrar += info.saldoPendiente;  // Suma del saldo pendiente (interés + mora - pagos)
+            activos++;
+        }
+        moraTotal += info.moraAcumulada;
+
+        (loan.pagos || []).forEach(p => {
+            if (p.fecha === todayStr) cobradoHoy += p.monto;
+        });
+    });
+
+    document.getElementById('capital-activo').textContent = capitalActivo.toFixed(2);
+    document.getElementById('cobrado-hoy').textContent = cobradoHoy.toFixed(2);
+    document.getElementById('mora-total').textContent = moraTotal.toFixed(2);
+    document.getElementById('total-por-cobrar').textContent = totalPorCobrar.toFixed(2);  // Nueva línea
+    document.getElementById('prestamos-activos').textContent = activos;
+}
 
 // Cerrar modales
 document.querySelector('.close').addEventListener('click', () => document.getElementById('modal').style.display = 'none');
