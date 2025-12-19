@@ -222,6 +222,11 @@ li:hover {
     border-radius: 5px;
     box-shadow: 0 1px 3px rgba(0,0,0,0.1);
     font-size: 0.95em;
+    cursor: pointer; /* Agregado: Hace que los items del historial sean clickeables para generar recibo */
+}
+
+#payment-history li:hover {
+    background: #e9ecef; /* Agregado: Efecto hover para items del historial */
 }
 
 /* Responsive: en pantallas grandes (tablet/desktop) */

@@ -1,12 +1,16 @@
+// Inicialización de variables globales: carga los préstamos desde localStorage o inicia un array vacío.
+// currentFilter almacena el filtro actual de la lista, currentLoanIndex el índice del préstamo en el modal.
 let loans = JSON.parse(localStorage.getItem('loans')) || [];
 let currentFilter = 'todos';
 let currentLoanIndex = null;
 
+// Función para guardar los préstamos en localStorage y actualizar el resumen financiero.
 function saveLoans() {
     localStorage.setItem('loans', JSON.stringify(loans));
     updateSummary();
 }
 
+// Calcula la fecha de vencimiento sumando los días de plazo a la fecha inicial.
 function calculateEndDate(fecha, plazoDias) {
     if (!fecha) return null;
     const date = new Date(fecha);
@@ -14,6 +18,8 @@ function calculateEndDate(fecha, plazoDias) {
     return date;
 }
 
+// Obtiene el estado del préstamo, días en mora, mora acumulada, total con mora, saldo pendiente, etc.
+// Calcula el estado basado en días restantes o pasados, y ajusta el saldo considerando pagos y mora.
 function getStatusAndMora(loan) {
     if (!loan.fecha) return { status: 'sin-fecha', diasMora: 0, moraAcumulada: 0, totalConMora: 0, endDate: null, saldoPendiente: 0, totalPagado: 0, cuotaDiaria: 0 };
 
@@ -45,6 +51,7 @@ function getStatusAndMora(loan) {
     return { status, diasMora, moraAcumulada, totalConMora, endDate, saldoPendiente, totalPagado, cuotaDiaria };
 }
 
+// Calcula la cuota diaria basada en capital, interés total fijo y plazo en días.
 function calculateDailyPayment(capital, interesPorcentaje, plazoDias) {
     if (!interesPorcentaje || interesPorcentaje <= 0 || !plazoDias) {
         return capital / plazoDias || 0;
@@ -54,11 +61,24 @@ function calculateDailyPayment(capital, interesPorcentaje, plazoDias) {
     return montoTotal / plazoDias;
 }
 
+// Formatea una fecha a formato local (es-PE) o 'No registrada' si no hay fecha.
 function formatDate(date) {
     if (!date) return 'No registrada';
     return new Date(date).toLocaleDateString('es-PE');
 }
 
+// Formatea un timestamp o fecha ISO a fecha y hora local (es-PE). Compatible con datos antiguos que usan 'fecha'.
+function formatDateTime(pago) {
+    let ts = pago.timestamp || pago.fecha;
+    if (!ts) return 'No registrada';
+    const date = new Date(ts);
+    if (isNaN(date.getTime())) return 'Fecha inválida';
+    return date.toLocaleDateString('es-PE') + (pago.timestamp ? ' ' + date.toLocaleTimeString('es-PE') : '');
+}
+
+// Actualiza el resumen financiero: capital activo, cobrado hoy, mora total, total por cobrar y préstamos activos.
+// Itera sobre los préstamos para calcular estos valores, excluyendo renovados o pagados.
+// Compatible con pagos antiguos que usan 'fecha'.
 function updateSummary() {
     const todayStr = new Date().toISOString().slice(0, 10);
     let capitalActivo = 0, cobradoHoy = 0, moraTotal = 0, totalPorCobrar = 0, activos = 0;
@@ -73,7 +93,8 @@ function updateSummary() {
         moraTotal += info.moraAcumulada;
 
         (loan.pagos || []).forEach(p => {
-            if (p.fecha === todayStr) cobradoHoy += p.monto;
+            let payDate = p.timestamp ? p.timestamp.slice(0, 10) : p.fecha;
+            if (payDate === todayStr) cobradoHoy += p.monto;
         });
     });
 
@@ -84,11 +105,15 @@ function updateSummary() {
     document.getElementById('prestamos-activos').textContent = activos;
 }
 
+// Busca préstamos por término en nombre o teléfono y renderiza la lista filtrada.
 function searchLoans() {
     const term = document.getElementById('search-input').value.toLowerCase();
     renderLoans(currentFilter, term);
 }
 
+// Renderiza la lista de préstamos según filtro y término de búsqueda.
+// Calcula cuotas pagadas basado en total pagado dividido por cuota diaria (floor y min al plazo).
+// Genera HTML para cada préstamo, incluyendo estado, info y botones de acciones.
 function renderLoans(filter = 'todos', searchTerm = '') {
     const list = document.getElementById('loans-list');
     list.innerHTML = '';
@@ -103,8 +128,7 @@ function renderLoans(filter = 'todos', searchTerm = '') {
     if (searchTerm) {
         filtered = filtered.filter(loan =>
             loan.nombre.toLowerCase().includes(searchTerm) ||
-            (loan.telefono || '').toString().includes(searchTerm) ||
-            (loan.direccion || '').toLowerCase().includes(searchTerm)
+            (loan.telefono || '').toString().includes(searchTerm)
         );
     }
 
@@ -116,8 +140,9 @@ function renderLoans(filter = 'todos', searchTerm = '') {
     filtered.forEach((loan, originalIndex) => {
         const info = getStatusAndMora(loan);
 
-        const diasConPago = new Set((loan.pagos || []).map(p => p.fecha)).size;
-        const cuotasPagadas = diasConPago;
+        // Calcula cuotas pagadas basado en monto total pagado / cuota diaria, no en días únicos.
+        // Esto permite que múltiples pagos (incluso en el mismo día) sumen cuotas si cubren múltiplos de la cuota.
+        const cuotasPagadas = info.cuotaDiaria > 0 ? Math.min(Math.floor(info.totalPagado / info.cuotaDiaria), loan.plazoDias) : 0;
         const totalCuotas = loan.plazoDias;
 
         const li = document.createElement('li');
@@ -164,11 +189,16 @@ function renderLoans(filter = 'todos', searchTerm = '') {
     });
 }
 
+// Muestra los detalles del préstamo en un modal, incluyendo botones para pago y renovación si aplica.
+// Calcula cuotas pagadas de la misma forma corregida.
 function showDetails(loan, info, cuotasPagadas, totalCuotas) {
     currentLoanIndex = loans.indexOf(loan);
 
     const modalBody = document.getElementById('modal-body');
     if (!modalBody) return;  // Seguridad adicional
+
+    // Recalcula cuotas pagadas basado en monto total para consistencia.
+    cuotasPagadas = info.cuotaDiaria > 0 ? Math.min(Math.floor(info.totalPagado / info.cuotaDiaria), loan.plazoDias) : 0;
 
     let statusText = info.status === 'verde' ? '<span style="color:#28a745;">Activo</span>' :
                      info.status === 'amarillo' ? '<span style="color:#ffc107;"><strong>Por vencer</strong></span>' :
@@ -176,7 +206,8 @@ function showDetails(loan, info, cuotasPagadas, totalCuotas) {
 
     let renovadoNota = loan.renovado ? '<p style="color:#6c757d;"><em>Este préstamo fue renovado y cerrado.</em></p>' : '';
 
-    let botonPago = !loan.renovado ? 
+    // Solo muestra botón de pago si saldo pendiente > 0 y no renovado.
+    let botonPago = !loan.renovado && info.saldoPendiente > 0 ? 
         `<button onclick="addPayment(${currentLoanIndex})" style="background:#28a745; color:white; padding:12px; border:none; border-radius:5px; width:100%; margin-top:10px; font-size:1.1em;">+ Registrar Pago Hoy</button>` : '';
 
     let botonRenovar = !loan.renovado && info.saldoPendiente > 0 ? 
@@ -186,7 +217,6 @@ function showDetails(loan, info, cuotasPagadas, totalCuotas) {
         ${renovadoNota}
         <p><strong>Nombre:</strong> ${loan.nombre}</p>
         <p><strong>Teléfono:</strong> ${loan.telefono || 'No registrado'}</p>
-        <p><strong>Dirección:</strong> ${loan.direccion || 'No registrado'}</p>
         <p><strong>Capital prestado:</strong> S/${loan.capital.toFixed(2)}</p>
         <p><strong>Interés diario:</strong> ${loan.interes}%</p>
         ${loan.mora > 0 ? `<p><strong>Mora diaria:</strong> ${loan.mora}%</p>` : ''}
@@ -207,13 +237,14 @@ function showDetails(loan, info, cuotasPagadas, totalCuotas) {
         <p><strong>Notas:</strong> ${loan.notas || 'Ninguna'}</p>
     `;
 
-    // Poblar el historial de pagos
+    // Poblar el historial de pagos con fecha, hora y monto, haciendo cada item clickeable para generar recibo PDF.
     const historyList = document.getElementById('payment-history');
     if (historyList) {
         historyList.innerHTML = '';
-        (loan.pagos || []).forEach(p => {
+        (loan.pagos || []).forEach((p, pagoIndex) => {
             const li = document.createElement('li');
-            li.textContent = `${p.fecha} - Pagó S/${p.monto.toFixed(2)}`;
+            li.textContent = `${formatDateTime(p)} - Pagó S/${p.monto.toFixed(2)}`;
+            li.onclick = () => generateReceiptPDF(loan, p, pagoIndex);
             historyList.appendChild(li);
         });
     }
@@ -221,15 +252,66 @@ function showDetails(loan, info, cuotasPagadas, totalCuotas) {
     document.getElementById('modal').style.display = 'block';
 }
 
+// Genera un recibo de pago en PDF usando jsPDF, con un formato más profesional y compatible con datos antiguos.
+function generateReceiptPDF(loan, pago, pagoIndex) {
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF();
+
+    let timestamp = pago.timestamp || pago.fecha;
+    const dateObj = new Date(timestamp);
+    const fecha = dateObj.toLocaleDateString('es-PE');
+    const hora = pago.timestamp ? dateObj.toLocaleTimeString('es-PE') : 'No disponible';
+    const fileName = `Recibo_Pago_${fecha.replace(/\//g, '-')}.pdf`;
+
+    // Formato profesional de recibo
+    doc.setFontSize(20);
+    doc.setFont("helvetica", "bold");
+    doc.text('RECIBO DE PAGO', 105, 20, { align: 'center' });
+
+    doc.setFontSize(12);
+    doc.setFont("helvetica", "normal");
+    doc.text(`Número de Recibo: ${pagoIndex + 1}`, 20, 40);
+    doc.text(`Fecha: ${fecha}`, 20, 50);
+    doc.text(`Hora: ${hora}`, 20, 60);
+
+    // Línea separadora
+    doc.setLineWidth(0.5);
+    doc.line(20, 65, 190, 65);
+
+    doc.text(`Deudor: ${loan.nombre}`, 20, 75);
+    doc.text(`Teléfono: ${loan.telefono || 'N/A'}`, 20, 85);
+    doc.text(`Capital Prestado: S/${loan.capital.toFixed(2)}`, 20, 95);
+    doc.text(`Monto Pagado: S/${pago.monto.toFixed(2)}`, 20, 105);
+    doc.text(`Notas del Préstamo: ${loan.notas || 'Ninguna'}`, 20, 115);
+
+    // Línea separadora inferior
+    doc.line(20, 120, 190, 120);
+
+    doc.setFontSize(10);
+    doc.text('Gracias por su pago. Este recibo confirma la recepción del monto indicado.', 105, 135, { align: 'center' });
+
+    doc.save(fileName);
+}
+
+// Agrega un pago al préstamo: solicita monto, verifica si es válido y actualiza.
+// Verifica si saldo pendiente > 0 antes de permitir el pago.
+// Registra timestamp completo para nuevos pagos.
 function addPayment(index) {
     const loan = loans[index];
     const info = getStatusAndMora(loan);
+
+    // Impide registrar pagos si el saldo pendiente ya es cero o negativo.
+    if (info.saldoPendiente <= 0) {
+        alert("La deuda ya está cancelada. No se pueden registrar más pagos.");
+        return;
+    }
+
     const montoStr = prompt(`¿Cuánto pagó hoy?\n(Cuota sugerida: S/${info.cuotaDiaria.toFixed(2)})`, info.cuotaDiaria.toFixed(2));
     if (montoStr && !isNaN(montoStr) && parseFloat(montoStr) > 0) {
         const monto = parseFloat(montoStr);
         if (!loan.pagos) loan.pagos = [];
         loan.pagos.push({
-            fecha: new Date().toISOString().slice(0, 10),
+            timestamp: new Date().toISOString(),
             monto: monto
         });
         saveLoans();
@@ -239,6 +321,7 @@ function addPayment(index) {
     }
 }
 
+// Renueva un préstamo con el saldo pendiente como nuevo capital, crea un nuevo préstamo y marca el viejo como renovado.
 function renewLoan(index) {
     const loan = loans[index];
     const info = getStatusAndMora(loan);
@@ -266,7 +349,6 @@ function renewLoan(index) {
         const nuevoLoan = {
             nombre: loan.nombre,
             telefono: loan.telefono,
-            direccion: loan.direccion,
             capital: info.saldoPendiente,
             interes: loan.interes,
             mora: loan.mora,
@@ -274,6 +356,7 @@ function renewLoan(index) {
             fecha: new Date().toISOString().slice(0, 10),
             notas: `Renovación automática del préstamo anterior (capital original: S/${loan.capital.toFixed(2)})`,
             pagos: [],
+            renovado: false,
             esRenovacion: true
         };
 
@@ -285,12 +368,12 @@ function renewLoan(index) {
     }
 }
 
+// Abre el modal de edición con los datos del préstamo cargados.
 function openEditModal(index) {
     const loan = loans[index];
     document.getElementById('edit-index').value = index;
     document.getElementById('edit-nombre').value = loan.nombre;
     document.getElementById('edit-telefono').value = loan.telefono || '';
-    document.getElementById('edit-direccion').value = loan.direccion || '';
     document.getElementById('edit-capital').value = loan.capital;
     document.getElementById('edit-interes').value = loan.interes;
     document.getElementById('edit-mora').value = loan.mora || '';
@@ -300,6 +383,7 @@ function openEditModal(index) {
     document.getElementById('edit-modal').style.display = 'block';
 }
 
+// Elimina un préstamo tras confirmación.
 function deleteLoan(index) {
     if (confirm('¿Seguro que quieres eliminar este préstamo permanentemente?')) {
         loans.splice(index, 1);
@@ -308,6 +392,7 @@ function deleteLoan(index) {
     }
 }
 
+// Cambia el filtro actual y renderiza la lista.
 function filterLoans(type) {
     currentFilter = type;
     document.querySelectorAll('.filter-btn').forEach(btn => btn.classList.remove('active'));
@@ -315,14 +400,13 @@ function filterLoans(type) {
     renderLoans(type);
 }
 
-// Agregar nuevo préstamo
+// Evento para agregar nuevo préstamo desde el formulario.
 document.getElementById('loan-form').addEventListener('submit', (e) => {
     e.preventDefault();
     const telInput = document.getElementById('telefono').value.replace(/\D/g, '').trim();
     const loan = {
         nombre: document.getElementById('nombre').value.trim(),
         telefono: telInput || null,
-        direccion: document.getElementById('direccion').value.trim(),
         capital: parseFloat(document.getElementById('capital').value),
         interes: parseFloat(document.getElementById('interes').value),
         mora: parseFloat(document.getElementById('mora').value) || 0,
@@ -339,7 +423,7 @@ document.getElementById('loan-form').addEventListener('submit', (e) => {
     e.target.reset();
 });
 
-// Editar préstamo
+// Evento para editar préstamo desde el modal.
 document.getElementById('edit-form').addEventListener('submit', (e) => {
     e.preventDefault();
     const index = parseInt(document.getElementById('edit-index').value);
@@ -348,7 +432,6 @@ document.getElementById('edit-form').addEventListener('submit', (e) => {
         ...loans[index],
         nombre: document.getElementById('edit-nombre').value.trim(),
         telefono: telInput || null,
-        direccion: document.getElementById('edit-direccion').value.trim(),
         capital: parseFloat(document.getElementById('edit-capital').value),
         interes: parseFloat(document.getElementById('edit-interes').value),
         mora: parseFloat(document.getElementById('edit-mora').value) || 0,
@@ -361,15 +444,16 @@ document.getElementById('edit-form').addEventListener('submit', (e) => {
     document.getElementById('edit-modal').style.display = 'none';
 });
 
-// Cerrar modales
+// Cerrar modales al hacer clic en la X.
 document.querySelector('.close').addEventListener('click', () => document.getElementById('modal').style.display = 'none');
 document.querySelector('.close-edit').addEventListener('click', () => document.getElementById('edit-modal').style.display = 'none');
 
+// Cerrar modales al hacer clic fuera del contenido.
 window.addEventListener('click', (e) => {
     if (e.target === document.getElementById('modal')) document.getElementById('modal').style.display = 'none';
     if (e.target === document.getElementById('edit-modal')) document.getElementById('edit-modal').style.display = 'none';
 });
 
-// Inicializar
+// Inicializa la aplicación renderizando la lista y actualizando el resumen.
 renderLoans();
 updateSummary();
