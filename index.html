@@ -4,8 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Control de Préstamos</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <link rel="stylesheet" href="style.css">
+    <!-- Agregado: Librería jsPDF para generar PDFs de recibos de pago -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 </head>
 <body>
     <div class="container">
@@ -60,25 +61,25 @@
         </div>
     </div>
     
-    <!-- Modal para editar -->
-    <div id="edit-modal" class="modal">
-        <div class="modal-content">
-            <span class="close-edit">&times;</span>
-            <h2>Editar Préstamo</h2>
-            <form id="edit-form">
-                <input type="hidden" id="edit-index">
-                <input type="text" id="edit-nombre" placeholder="Nombre del deudor" required>
-                <input type="tel" id="telefono" placeholder="Teléfono" inputmode="numeric" pattern="[0-9]*" title="Solo se permiten números">
-                <input type="number" id="edit-capital" placeholder="Cantidad prestada" required step="0.01">
-                <input type="number" id="edit-interes" placeholder="Interés diario (%)" required step="0.01">
-                <input type="number" id="edit-mora" placeholder="Porcentaje de mora diaria (%) - opcional" step="0.01" min="0">
-                <input type="number" id="edit-plazo" placeholder="Plazo en días" required min="1">
-                <input type="date" id="edit-fecha">
-                <textarea id="edit-notas" placeholder="Notas adicionales"></textarea>
-                <button type="submit">Guardar Cambios</button>
-            </form>
-        </div>
+   <!-- Modal para editar -->
+<div id="edit-modal" class="modal">
+    <div class="modal-content">
+        <span class="close-edit">&times;</span>
+        <h2>Editar Préstamo</h2>
+        <form id="edit-form">
+            <input type="hidden" id="edit-index">
+            <input type="text" id="edit-nombre" placeholder="Nombre del deudor" required>
+            <input type="tel" id="edit-telefono" placeholder="Teléfono" inputmode="numeric" pattern="[0-9]*" title="Solo se permiten números">
+            <input type="number" id="edit-capital" placeholder="Cantidad prestada" required step="0.01">
+            <input type="number" id="edit-interes" placeholder="Interés diario (%)" required step="0.01">
+            <input type="number" id="edit-mora" placeholder="Porcentaje de mora diaria (%) - opcional" step="0.01" min="0">
+            <input type="number" id="edit-plazo" placeholder="Plazo en días" required min="1">
+            <input type="date" id="edit-fecha">
+            <textarea id="edit-notas" placeholder="Notas adicionales"></textarea>
+            <button type="submit">Guardar Cambios</button>
+        </form>
     </div>
+</div>
 
     <script src="script.js"></script>
 </body>
