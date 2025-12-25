@@ -202,19 +202,11 @@ li:hover {
 .close:hover {
     color: #000;
 }
-
-/* Historial de pagos en modal */
-#payment-history {
-    list-style: none;
-    padding: 0;
-    max-height: 200px;
-    overflow-y: auto;
-    background: #f8f9fa;
-    border-radius: 8px;
-    padding: 10px;
-    margin: 10px 0;
+/* Texto de préstamo renovado */
+.loan-info em {
+    font-size: 0.9em;
+    color: #6c757d;
 }
-
 #payment-history li {
     background: white;
     padding: 8px;
@@ -229,6 +221,40 @@ li:hover {
     background: #e9ecef; /* Agregado: Efecto hover para items del historial */
 }
 
+
+/* Historial de pagos en modal */
+#payment-history {
+    list-style: none;
+    padding: 0;
+    max-height: 200px;
+    overflow-y: auto;
+    background: #f8f9fa;
+    border-radius: 8px;
+    padding: 10px;
+    margin: 10px 0;
+}
+
+
+#payment-history li {
+    background: white;
+    padding: 8px;
+    margin: 5px 0;
+    border-radius: 5px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    font-size: 0.95em;
+    cursor: pointer; /* Agregado: Hace que los items del historial sean clickeables para generar recibo */
+}
+
+#payment-history li:hover {
+    background: #e9ecef; /* Agregado: Efecto hover para items del historial */
+}
+#logout-btn {
+  transition: background 0.3s;
+}
+
+#logout-btn:hover {
+  background: #c82333;
+}
 /* Responsive: en pantallas grandes (tablet/desktop) */
 @media (min-width: 768px) {
     form {
@@ -240,4 +266,87 @@ li:hover {
     body { padding: 20px; }
     .container { padding: 25px; }
     h1 { font-size: 2.5em; }
+}
+#login-container {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+#login-container .container {
+  background: white;
+  padding: 40px;
+  border-radius: 12px;
+  box-shadow: 0 15px 35px rgba(0,0,0,0.2);
+  max-width: 420px;
+  width: 100%;
+  text-align: center;
+}
+
+#login-container h1 {
+  margin-bottom: 30px;
+  color: #333;
+  font-size: 2em;
+}
+
+#login-container input {
+  padding: 14px;
+  width: 100%;
+  box-sizing: border-box;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  font-size: 16px;
+  margin-bottom: 10px;
+}
+
+#login-container button {
+  padding: 14px;
+  width: 100%;
+  border: none;
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: bold;
+  cursor: pointer;
+  margin-top: 10px;
+
+}
+.loan-item {
+  padding: 15px;
+  margin: 10px 0;
+  background: #f8f9fa;
+  border-radius: 8px;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.loan-item:hover {
+  background: #e9ecef;
+}
+
+.loan-summary {
+  flex: 1;
+}
+
+.actions button {
+  margin-left: 8px;
+  padding: 8px 12px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.edit-btn { background: #ffc107; color: black; }
+.delete-btn { background: #dc3545; color: white; }
+/* Estilos para el resto de la app (tus estilos originales continúan aquí) */
+.container {
+max-width: 900px;
+margin: auto;
+background: white;
+padding: 15px;
+border-radius: 8px;
+box-shadow: 0 0 10px rgba(0,0,0,0.1);
 }

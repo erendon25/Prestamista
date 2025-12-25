@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Iniciar Sesión / Registrarse</title>
+  <link rel="stylesheet" href="style.css">
+
+  <!-- Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
+
+  <!-- Configuración Firebase -->
+  <script src="firebase-config.js"></script>
+</head>
+<body id="login-container">
+  <div class="container">
+    <h1>Control de Préstamos</h1>
+
+    <!-- Sección principal de autenticación -->
+    <div id="auth-section">
+      <h2 id="form-title">Iniciar Sesión</h2>
+
+      <!-- Formulario email/contraseña -->
+      <form id="email-form">
+        <input type="email" id="email" placeholder="Correo electrónico" required>
+        <input type="password" id="password" placeholder="Contraseña" required>
+        <div style="text-align: left; margin: 10px 0;">
+          <input type="checkbox" id="remember-me">
+          <label for="remember-me" style="color: #666; font-size: 0.9em;">Recordarme</label>
+        </div>
+        <button type="submit" id="auth-btn">Iniciar Sesión</button>
+      </form>
+
+      <p style="margin-top: 10px;">
+        <a href="#" id="forgot-password" style="color: #007bff; font-size: 0.9em;">¿Olvidaste tu contraseña?</a>
+      </p>
+
+      <div style="margin: 20px 0; position: relative;">
+        <hr style="border: none; border-top: 1px solid #ddd;">
+        <span style="background: white; padding: 0 10px; position: absolute; top: -10px; left: 50%; transform: translateX(-50%); color: #666; font-size: 0.9em;">o</span>
+      </div>
+
+      <!-- Botón Google -->
+      <button id="google-btn" style="background: #4285f4; color: white; padding: 14px; width: 100%; border: none; border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer;">
+        <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google" style="width: 20px; vertical-align: middle; margin-right: 10px;">
+        Continuar con Google
+      </button>
+
+      <p id="toggle-text" style="margin-top: 20px;">
+        ¿No tienes cuenta? <a href="#" id="toggle-link">Regístrate</a>
+      </p>
+
+      <p id="message" style="color: red; margin-top: 15px; min-height: 24px;"></p>
+    </div>
+
+    <!-- Sección para código tenant (primer inicio) -->
+    <div id="code-section" style="display: none;">
+      <h2>Bienvenido por primera vez</h2>
+      <p>Ingresa el código de acceso proporcionado por el administrador.</p>
+      <input type="text" id="tenant-code" placeholder="Código (ej. ABC123)" style="text-transform: uppercase; padding: 14px; width: 100%; box-sizing: border-box;" required>
+      <button id="code-btn" style="margin-top: 15px; width: 100%;">Confirmar Código</button>
+      <p id="code-message" style="color: red; margin-top: 10px;"></p>
+    </div>
+  </div>
+
+  <script>
+  const auth = window.auth;
+  const db = window.db;
+
+  let isSignup = false;
+
+  // Cargar credenciales recordadas
+  if (localStorage.getItem('rememberMe') === 'true') {
+    document.getElementById('email').value = localStorage.getItem('rememberEmail') || '';
+    document.getElementById('password').value = localStorage.getItem('rememberPassword') || '';
+    document.getElementById('remember-me').checked = true;
+  }
+
+  // Función para reasignar el evento toggle
+  function setupToggleListener() {
+    document.querySelectorAll('#toggle-link').forEach(link => {
+      link.onclick = (e) => {
+        e.preventDefault();
+        isSignup = !isSignup;
+        document.getElementById('form-title').textContent = isSignup ? 'Registrarse' : 'Iniciar Sesión';
+        document.getElementById('auth-btn').textContent = isSignup ? 'Registrarse' : 'Iniciar Sesión';
+        document.getElementById('toggle-text').innerHTML = isSignup 
+          ? '¿Ya tienes cuenta? <a href="#" id="toggle-link">Inicia sesión</a>'
+          : '¿No tienes cuenta? <a href="#" id="toggle-link">Regístrate</a>';
+        document.getElementById('message').textContent = '';
+        setupToggleListener();
+      };
+    });
+  }
+  setupToggleListener();
+
+  // Autenticación con email/contraseña
+  document.getElementById('email-form').addEventListener('submit', (e) => {
+    e.preventDefault();
+    const email = document.getElementById('email').value.trim();
+    const password = document.getElementById('password').value;
+    const remember = document.getElementById('remember-me').checked;
+    const messageEl = document.getElementById('message');
+
+    if (!email || !password) {
+      messageEl.textContent = 'Completa todos los campos';
+      return;
+    }
+
+    if (remember) {
+      localStorage.setItem('rememberMe', 'true');
+      localStorage.setItem('rememberEmail', email);
+      localStorage.setItem('rememberPassword', password);
+    } else {
+      localStorage.removeItem('rememberMe');
+      localStorage.removeItem('rememberEmail');
+      localStorage.removeItem('rememberPassword');
+    }
+
+    messageEl.textContent = 'Procesando...';
+    messageEl.style.color = 'black';
+
+    const promise = isSignup 
+      ? auth.createUserWithEmailAndPassword(email, password)
+      : auth.signInWithEmailAndPassword(email, password);
+
+    promise.catch(err => {
+      messageEl.style.color = 'red';
+      messageEl.textContent = err.message;
+    });
+  });
+
+  // Olvidé contraseña
+  document.getElementById('forgot-password').addEventListener('click', (e) => {
+    e.preventDefault();
+    const email = document.getElementById('email').value.trim();
+    if (!email) {
+      document.getElementById('message').textContent = 'Ingresa tu correo primero';
+      return;
+    }
+    document.getElementById('message').textContent = 'Enviando...';
+    auth.sendPasswordResetEmail(email).then(() => {
+      document.getElementById('message').style.color = 'green';
+      document.getElementById('message').textContent = 'Email de recuperación enviado';
+    }).catch(err => {
+      document.getElementById('message').style.color = 'red';
+      document.getElementById('message').textContent = err.message;
+    });
+  });
+
+  // Autenticación con Google (sin cambios)
+  document.getElementById('google-btn').addEventListener('click', () => {
+    const messageEl = document.getElementById('message');
+    messageEl.textContent = 'Iniciando con Google...';
+    messageEl.style.color = 'black';
+
+    const provider = new firebase.auth.GoogleAuthProvider();
+    provider.addScope('email');
+    provider.addScope('profile');
+
+    auth.signInWithPopup(provider).catch(err => {
+      messageEl.style.color = 'red';
+      messageEl.textContent = err.message || 'Error al iniciar con Google';
+    });
+  });
+
+  // Confirmar código tenant (sin cambios mayores)
+  document.getElementById('code-btn').addEventListener('click', async () => {
+    const code = document.getElementById('tenant-code').value.trim().toUpperCase();
+    const messageEl = document.getElementById('code-message');
+
+    if (!code) {
+      messageEl.textContent = 'Ingresa un código válido';
+      return;
+    }
+
+    const user = auth.currentUser;
+    if (!user) {
+      messageEl.textContent = 'Error de autenticación';
+      return;
+    }
+
+    try {
+      const tenantRef = db.collection('tenants').doc(code);
+      const snap = await tenantRef.get();
+
+      if (!snap.exists || snap.data().assigned === true || snap.data().blocked === true) {
+        messageEl.textContent = snap.data()?.blocked ? 'Código bloqueado por el administrador' : 'Código inválido o ya utilizado';
+        return;
+      }
+
+      await db.collection('users').doc(user.uid).set({ tenantCode: code });
+      await tenantRef.update({ assigned: true });
+
+      messageEl.style.color = 'green';
+      messageEl.textContent = 'Código asignado correctamente. Redirigiendo...';
+      setTimeout(() => window.location.replace('index.html'), 1500);
+    } catch (error) {
+      messageEl.style.color = 'red';
+      messageEl.textContent = 'Error: ' + error.message;
+    }
+  });
+
+  // Control de estado de autenticación (sin cambios mayores)
+  auth.onAuthStateChanged(async (user) => {
+    if (!user) {
+      document.getElementById('auth-section').style.display = 'block';
+      document.getElementById('code-section').style.display = 'none';
+      return;
+    }
+
+    try {
+      const userDoc = await db.collection('users').doc(user.uid).get();
+
+      if (!userDoc.exists) {
+        document.getElementById('auth-section').style.display = 'none';
+        document.getElementById('code-section').style.display = 'block';
+        document.getElementById('code-message').textContent = '';
+        return;
+      }
+
+      const data = userDoc.data();
+      if (data.tenantCode === 'SUPERADMIN' || data.role === 'superadmin') {
+        window.location.replace('superadmin.html');
+        return;
+      }
+
+      if (data.tenantCode) {
+        window.location.replace('index.html');
+      }
+    } catch (error) {
+      console.error('Error verificando usuario:', error);
+      document.getElementById('auth-section').style.display = 'block';
+      document.getElementById('code-section').style.display = 'none';
+    }
+  });
+  </script>
+</body>
+</html>

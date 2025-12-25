@@ -5,12 +5,20 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Control de Préstamos</title>
     <link rel="stylesheet" href="style.css">
-    <!-- Agregado: Librería jsPDF para generar PDFs de recibos de pago -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
+    <script src="firebase-config.js"></script>
 </head>
 <body>
     <div class="container">
         <h1>Control de Préstamos</h1>
+        <div style="display: flex; justify-content: flex-end; align-items: center; margin-bottom: 20px;">  
+            <button id="logout-btn" style="padding: 10px 20px; background: #dc3545; color: white; border: none; border-radius: 8px; font-size: 16px; cursor: pointer;">
+                Cerrar Sesión
+            </button>
+        </div>
         
         <div class="summary">
             <h2>Resumen Financiero</h2>
@@ -21,6 +29,11 @@
                 Total por cobrar: S/<span id="total-por-cobrar">0.00</span> |
                 Préstamos activos: <span id="prestamos-activos">0</span>
             </div>
+        </div>
+
+        <div style="text-align: center; margin: 20px 0;">
+            <button id="add-expense-btn" style="padding: 10px 20px; background: #007bff; color: white; border: none; border-radius: 8px; margin-right: 10px;">Agregar Gasto</button>
+            <button id="history-btn" style="padding: 10px 20px; background: #007bff; color: white; border: none; border-radius: 8px;">Historial de Movimientos</button>
         </div>
 
         <div class="search-bar">
@@ -50,36 +63,54 @@
         <ul id="loans-list"></ul>
     </div>
     
-    <!-- Modal para detalles -->
+    <!-- Modal para detalles (agregado sección pagos y registro) -->
     <div id="modal" class="modal">
         <div class="modal-content">
             <span class="close">&times;</span>
             <h2>Detalles del Préstamo</h2>
-            <div id="modal-body">
-                <!-- Contenido dinámico -->
-            </div>
+            <div id="modal-body"></div>
         </div>
     </div>
     
-   <!-- Modal para editar -->
-<div id="edit-modal" class="modal">
-    <div class="modal-content">
-        <span class="close-edit">&times;</span>
-        <h2>Editar Préstamo</h2>
-        <form id="edit-form">
-            <input type="hidden" id="edit-index">
-            <input type="text" id="edit-nombre" placeholder="Nombre del deudor" required>
-            <input type="tel" id="edit-telefono" placeholder="Teléfono" inputmode="numeric" pattern="[0-9]*" title="Solo se permiten números">
-            <input type="number" id="edit-capital" placeholder="Cantidad prestada" required step="0.01">
-            <input type="number" id="edit-interes" placeholder="Interés diario (%)" required step="0.01">
-            <input type="number" id="edit-mora" placeholder="Porcentaje de mora diaria (%) - opcional" step="0.01" min="0">
-            <input type="number" id="edit-plazo" placeholder="Plazo en días" required min="1">
-            <input type="date" id="edit-fecha">
-            <textarea id="edit-notas" placeholder="Notas adicionales"></textarea>
-            <button type="submit">Guardar Cambios</button>
-        </form>
+    <!-- Modal para editar -->
+    <div id="edit-modal" class="modal">
+        <div class="modal-content">
+            <span class="close-edit">&times;</span>
+            <h2>Editar Préstamo</h2>
+            <form id="edit-form">
+                <input type="hidden" id="edit-index">
+                <input type="text" id="edit-nombre" placeholder="Nombre del deudor" required>
+                <input type="tel" id="edit-telefono" placeholder="Teléfono" inputmode="numeric" pattern="[0-9]*">
+                <input type="number" id="edit-capital" placeholder="Cantidad prestada" required step="0.01">
+                <input type="number" id="edit-interes" placeholder="Interés diario (%)" required step="0.01">
+                <input type="number" id="edit-mora" placeholder="Porcentaje de mora diaria (%) - opcional" step="0.01" min="0">
+                <input type="number" id="edit-plazo" placeholder="Plazo en días" required min="1">
+                <input type="date" id="edit-fecha">
+                <textarea id="edit-notas" placeholder="Notas adicionales"></textarea>
+                <button type="submit">Guardar Cambios</button>
+            </form>
+        </div>
     </div>
-</div>
+
+    <!-- Modal para gasto -->
+    <div id="expense-modal" class="modal">
+        <div class="modal-content">
+            <span class="close-expense">&times;</span>
+            <h2>Agregar Gasto</h2>
+            <input type="text" id="expense-motive" placeholder="Motivo del gasto" required>
+            <input type="number" id="expense-amount" placeholder="Monto" step="0.01" required>
+            <button id="save-expense">Guardar Gasto</button>
+        </div>
+    </div>
+
+    <!-- Modal para historial -->
+    <div id="history-modal" class="modal">
+        <div class="modal-content">
+            <span class="close-history">&times;</span>
+            <h2>Historial de Movimientos</h2>
+            <ul id="history-list" style="list-style: none; padding: 0;"></ul>
+        </div>
+    </div>
 
     <script src="script.js"></script>
 </body>

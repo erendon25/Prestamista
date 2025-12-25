@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Superadmin - Generar Códigos</title>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
+<script src="firebase-config.js"></script>
+<link rel="stylesheet" href="style.css">
+</head>
+<body style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; display: flex; align-items: center; justify-content: center;">
+<div class="container" style="text-align: center;">
+<h1>Panel Superadmin</h1>
+<button id="generate-code" style="padding: 15px 30px; font-size: 18px; background: #28a745; color: white; border: none; border-radius: 8px; cursor: pointer; margin-bottom: 20px;">Generar Nuevo Código</button>
+<h2 style="margin-top: 30px;">Códigos Generados</h2>
+<ul id="codes-list" style="list-style: none; padding: 0; max-width: 600px; margin: auto;"></ul>
+<button id="logout-btn" style="margin-top: 30px; padding: 12px 25px; background: #dc3545; color: white; border: none; border-radius: 8px;">Cerrar Sesión</button>
+</div>
+<script src="superadmin.js"></script>
+</body>
+</html>
