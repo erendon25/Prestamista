@@ -14,27 +14,24 @@
 <body>
     <div class="container">
         <h1>Control de Préstamos</h1>
-        <div style="display: flex; justify-content: flex-end; align-items: center; margin-bottom: 20px;">  
-            <button id="logout-btn" style="padding: 10px 20px; background: #dc3545; color: white; border: none; border-radius: 8px; font-size: 16px; cursor: pointer;">
-                Cerrar Sesión
-            </button>
-        </div>
-        
         <div class="summary">
             <h2>Resumen Financiero</h2>
             <div id="summary-stats">
                 Capital activo: S/<span id="capital-activo">0.00</span> |
                 Cobrado hoy: S/<span id="cobrado-hoy">0.00</span> |
-                Mora total: S/<span id="mora-total">0.00</span> |
+                Cobro esperado hoy: S/<span id="cobro-esperado-hoy">0.00</span> |
                 Total por cobrar: S/<span id="total-por-cobrar">0.00</span> |
                 Préstamos activos: <span id="prestamos-activos">0</span>
             </div>
         </div>
 
-        <div style="text-align: center; margin: 20px 0;">
-            <button id="add-expense-btn" style="padding: 10px 20px; background: #007bff; color: white; border: none; border-radius: 8px; margin-right: 10px;">Agregar Gasto</button>
-            <button id="history-btn" style="padding: 10px 20px; background: #007bff; color: white; border: none; border-radius: 8px;">Historial de Movimientos</button>
-        </div>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin: 20px 0;">
+    <div style="display: flex; gap: 15px;">
+        <button id="add-expense-btn" class="main-action-btn">Agregar Gasto</button>
+        <button id="history-btn" class="main-action-btn">Historial de Movimientos</button>
+    </div>
+    <button id="logout-btn" class="logout-btn">Cerrar Sesión</button>
+</div>
 
         <div class="search-bar">
             <input type="text" id="search-input" placeholder="Buscar por nombre, teléfono o dirección..." onkeyup="searchLoans()">
@@ -43,11 +40,15 @@
         <h2>Agregar Nuevo Préstamo</h2>
         <form id="loan-form">
             <input type="text" id="nombre" placeholder="Nombre del deudor" required>
-            <input type="tel" id="telefono" placeholder="Teléfono" inputmode="numeric" pattern="[0-9]*" title="Solo se permiten números">
+            <input type="tel" id="telefono" placeholder="Teléfono" inputmode="numeric" pattern="[0-9]*">
             <input type="number" id="capital" placeholder="Cantidad prestada" required step="0.01">
-            <input type="number" id="interes" placeholder="Interés diario (%)" required step="0.01">
-            <input type="number" id="mora" placeholder="Porcentaje de mora diaria (%) - opcional" step="0.01" min="0">
-            <input type="number" id="plazo-dias" placeholder="Plazo en días" required min="1">
+            <input type="number" id="interes" placeholder="Interés por período (%)" required step="0.01">
+            <select id="metodo-pago" required>
+                <option value="diario">Diario</option>
+                <option value="semanal">Semanal</option>
+                <option value="mensual">Mensual</option>
+            </select>
+            <input type="number" id="plazo-cantidad" placeholder="Cantidad de períodos (ej. 30 días, 4 semanas)" required min="1">
             <input type="date" id="fecha">
             <textarea id="notas" placeholder="Notas adicionales"></textarea>
             <button type="submit">Agregar Préstamo</button>
@@ -59,11 +60,12 @@
             <button onclick="filterLoans('activos')" class="filter-btn">Activos (en verde)</button>
             <button onclick="filterLoans('por-vencer')" class="filter-btn">Por vencer</button>
             <button onclick="filterLoans('vencidos')" class="filter-btn">Vencidos (en rojo)</button>
+            <button onclick="filterLoans('cobrar-hoy')" class="filter-btn">Cobrar hoy</button>
         </div>
         <ul id="loans-list"></ul>
     </div>
     
-    <!-- Modal para detalles (agregado sección pagos y registro) -->
+    <!-- Modal para detalles -->
     <div id="modal" class="modal">
         <div class="modal-content">
             <span class="close">&times;</span>
@@ -72,36 +74,22 @@
         </div>
     </div>
     
-    <!-- Modal para editar -->
-    <div id="edit-modal" class="modal">
-        <div class="modal-content">
-            <span class="close-edit">&times;</span>
-            <h2>Editar Préstamo</h2>
-            <form id="edit-form">
-                <input type="hidden" id="edit-index">
-                <input type="text" id="edit-nombre" placeholder="Nombre del deudor" required>
-                <input type="tel" id="edit-telefono" placeholder="Teléfono" inputmode="numeric" pattern="[0-9]*">
-                <input type="number" id="edit-capital" placeholder="Cantidad prestada" required step="0.01">
-                <input type="number" id="edit-interes" placeholder="Interés diario (%)" required step="0.01">
-                <input type="number" id="edit-mora" placeholder="Porcentaje de mora diaria (%) - opcional" step="0.01" min="0">
-                <input type="number" id="edit-plazo" placeholder="Plazo en días" required min="1">
-                <input type="date" id="edit-fecha">
-                <textarea id="edit-notas" placeholder="Notas adicionales"></textarea>
-                <button type="submit">Guardar Cambios</button>
-            </form>
-        </div>
-    </div>
-
     <!-- Modal para gasto -->
-    <div id="expense-modal" class="modal">
-        <div class="modal-content">
-            <span class="close-expense">&times;</span>
-            <h2>Agregar Gasto</h2>
-            <input type="text" id="expense-motive" placeholder="Motivo del gasto" required>
-            <input type="number" id="expense-amount" placeholder="Monto" step="0.01" required>
-            <button id="save-expense">Guardar Gasto</button>
-        </div>
+<div id="expense-modal" class="modal">
+    <div class="modal-content expense-modal-content">
+        <span class="close-expense">&times;</span>
+        <h2>Agregar Gasto</h2>
+        <form id="expense-form">
+            <label for="expense-motive">Motivo del gasto</label>
+            <input type="text" id="expense-motive" placeholder="Ej. Compra de materiales" required>
+            
+            <label for="expense-amount">Monto</label>
+            <input type="number" id="expense-amount" placeholder="0.00" step="0.01" min="0.01" required>
+            
+            <button type="submit" id="save-expense">Guardar Gasto</button>
+        </form>
     </div>
+</div>
 
     <!-- Modal para historial -->
     <div id="history-modal" class="modal">
@@ -111,6 +99,29 @@
             <ul id="history-list" style="list-style: none; padding: 0;"></ul>
         </div>
     </div>
+    <!-- Modal para editar préstamo -->
+<div id="edit-modal" class="modal">
+    <div class="modal-content">
+        <span class="close-edit">&times;</span>
+        <h2>Editar Préstamo</h2>
+        <form id="edit-form">
+            <input type="hidden" id="edit-loan-id">
+            <input type="text" id="edit-nombre" placeholder="Nombre del deudor" required>
+            <input type="tel" id="edit-telefono" placeholder="Teléfono">
+            <input type="number" id="edit-capital" placeholder="Capital prestado" required step="0.01">
+            <input type="number" id="edit-interes" placeholder="Interés por período (%)" required step="0.01">
+            <select id="edit-metodo-pago" required>
+                <option value="diario">Diario</option>
+                <option value="semanal">Semanal</option>
+                <option value="mensual">Mensual</option>
+            </select>
+            <input type="number" id="edit-cantidad-periodos" placeholder="Cantidad de períodos" required min="1">
+            <input type="date" id="edit-fecha" required>
+            <textarea id="edit-notas" placeholder="Notas adicionales"></textarea>
+            <button type="submit" style="padding:12px; background:#007bff; color:white; border:none; border-radius:8px; width:100%; font-size:16px; cursor:pointer;">Guardar Cambios</button>
+        </form>
+    </div>
+</div>
 
     <script src="script.js"></script>
 </body>

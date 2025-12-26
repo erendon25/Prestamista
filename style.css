@@ -22,7 +22,60 @@ h1, h2, h3 {
 h1 { font-size: 2.2em; }
 h2 { font-size: 1.8em; }
 h3 { font-size: 1.4em; }
+/* Botones principales mejorados */
+.main-action-btn {
+    padding: 12px 24px;
+    background: #007bff;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 16px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: background 0.3s, transform 0.2s;
+    box-shadow: 0 4px 8px rgba(0, 123, 255, 0.2);
+}
 
+.main-action-btn:hover {
+    background: #0056b3;
+    transform: translateY(-2px);
+}
+
+.logout-btn {
+    padding: 12px 24px;
+    background: #dc3545;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 16px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: background 0.3s, transform 0.2s;
+    box-shadow: 0 4px 8px rgba(220, 53, 69, 0.2);
+}
+
+.logout-btn:hover {
+    background: #c82333;
+    transform: translateY(-2px);
+}
+
+/* Responsive para botones */
+@media (max-width: 768px) {
+    .main-action-btn, .logout-btn {
+        padding: 10px 18px;
+        font-size: 15px;
+    }
+    
+    div[style*="justify-content: space-between"] > div {
+        flex-direction: column;
+        gap: 10px;
+    }
+    
+    div[style*="justify-content: space-between"] {
+        flex-direction: column;
+        align-items: stretch;
+    }
+}
 /* Resumen financiero */
 .summary {
     background: #e9ecef;

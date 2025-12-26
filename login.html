@@ -26,16 +26,18 @@
       <form id="email-form">
         <input type="email" id="email" placeholder="Correo electrónico" required>
         <input type="password" id="password" placeholder="Contraseña" required>
-        <div style="text-align: left; margin: 10px 0;">
-          <input type="checkbox" id="remember-me">
-          <label for="remember-me" style="color: #666; font-size: 0.9em;">Recordarme</label>
+
+        <!-- Checkbox y enlace en la misma línea -->
+        <div style="display: flex; justify-content: space-between; align-items: center; margin: 15px 0;">
+          <div style="display: flex; align-items: center;">
+            <input type="checkbox" id="remember-me" style="width: 20px; height: 20px; margin-right: 10px; cursor: pointer;">
+            <label for="remember-me" style="color: #555; font-size: 1em; cursor: pointer; user-select: none;">Recordarme</label>
+          </div>
+          <a href="#" id="forgot-password" style="color: #007bff; font-size: 0.9em; text-decoration: none;">¿Olvidaste tu contraseña?</a>
         </div>
+
         <button type="submit" id="auth-btn">Iniciar Sesión</button>
       </form>
-
-      <p style="margin-top: 10px;">
-        <a href="#" id="forgot-password" style="color: #007bff; font-size: 0.9em;">¿Olvidaste tu contraseña?</a>
-      </p>
 
       <div style="margin: 20px 0; position: relative;">
         <hr style="border: none; border-top: 1px solid #ddd;">
@@ -66,176 +68,177 @@
   </div>
 
   <script>
-  const auth = window.auth;
-  const db = window.db;
+    const auth = window.auth;
+    const db = window.db;
 
-  let isSignup = false;
+    let isSignup = false;
 
-  // Cargar credenciales recordadas
-  if (localStorage.getItem('rememberMe') === 'true') {
-    document.getElementById('email').value = localStorage.getItem('rememberEmail') || '';
-    document.getElementById('password').value = localStorage.getItem('rememberPassword') || '';
-    document.getElementById('remember-me').checked = true;
-  }
+    // Cargar credenciales recordadas (email y contraseña)
+    if (localStorage.getItem('rememberMe') === 'true') {
+      document.getElementById('email').value = localStorage.getItem('rememberEmail') || '';
+      document.getElementById('password').value = localStorage.getItem('rememberPassword') || '';
+      document.getElementById('remember-me').checked = true;
+    }
 
-  // Función para reasignar el evento toggle
-  function setupToggleListener() {
-    document.querySelectorAll('#toggle-link').forEach(link => {
-      link.onclick = (e) => {
-        e.preventDefault();
-        isSignup = !isSignup;
-        document.getElementById('form-title').textContent = isSignup ? 'Registrarse' : 'Iniciar Sesión';
-        document.getElementById('auth-btn').textContent = isSignup ? 'Registrarse' : 'Iniciar Sesión';
-        document.getElementById('toggle-text').innerHTML = isSignup 
-          ? '¿Ya tienes cuenta? <a href="#" id="toggle-link">Inicia sesión</a>'
-          : '¿No tienes cuenta? <a href="#" id="toggle-link">Regístrate</a>';
-        document.getElementById('message').textContent = '';
-        setupToggleListener();
-      };
+    // Toggle entre login y registro
+    document.getElementById('toggle-link').addEventListener('click', (e) => {
+      e.preventDefault();
+      isSignup = !isSignup;
+      document.getElementById('form-title').textContent = isSignup ? 'Registrarse' : 'Iniciar Sesión';
+      document.getElementById('auth-btn').textContent = isSignup ? 'Registrarse' : 'Iniciar Sesión';
+      document.getElementById('toggle-text').innerHTML = isSignup 
+        ? '¿Ya tienes cuenta? <a href="#" id="toggle-link">Iniciar Sesión</a>'
+        : '¿No tienes cuenta? <a href="#" id="toggle-link">Regístrate</a>';
     });
-  }
-  setupToggleListener();
 
-  // Autenticación con email/contraseña
-  document.getElementById('email-form').addEventListener('submit', (e) => {
-    e.preventDefault();
-    const email = document.getElementById('email').value.trim();
-    const password = document.getElementById('password').value;
-    const remember = document.getElementById('remember-me').checked;
-    const messageEl = document.getElementById('message');
+    // Formulario principal
+    document.getElementById('email-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const email = document.getElementById('email').value.trim();
+      const password = document.getElementById('password').value;
+      const messageEl = document.getElementById('message');
 
-    if (!email || !password) {
-      messageEl.textContent = 'Completa todos los campos';
-      return;
-    }
-
-    if (remember) {
-      localStorage.setItem('rememberMe', 'true');
-      localStorage.setItem('rememberEmail', email);
-      localStorage.setItem('rememberPassword', password);
-    } else {
-      localStorage.removeItem('rememberMe');
-      localStorage.removeItem('rememberEmail');
-      localStorage.removeItem('rememberPassword');
-    }
-
-    messageEl.textContent = 'Procesando...';
-    messageEl.style.color = 'black';
-
-    const promise = isSignup 
-      ? auth.createUserWithEmailAndPassword(email, password)
-      : auth.signInWithEmailAndPassword(email, password);
-
-    promise.catch(err => {
-      messageEl.style.color = 'red';
-      messageEl.textContent = err.message;
-    });
-  });
-
-  // Olvidé contraseña
-  document.getElementById('forgot-password').addEventListener('click', (e) => {
-    e.preventDefault();
-    const email = document.getElementById('email').value.trim();
-    if (!email) {
-      document.getElementById('message').textContent = 'Ingresa tu correo primero';
-      return;
-    }
-    document.getElementById('message').textContent = 'Enviando...';
-    auth.sendPasswordResetEmail(email).then(() => {
-      document.getElementById('message').style.color = 'green';
-      document.getElementById('message').textContent = 'Email de recuperación enviado';
-    }).catch(err => {
-      document.getElementById('message').style.color = 'red';
-      document.getElementById('message').textContent = err.message;
-    });
-  });
-
-  // Autenticación con Google (sin cambios)
-  document.getElementById('google-btn').addEventListener('click', () => {
-    const messageEl = document.getElementById('message');
-    messageEl.textContent = 'Iniciando con Google...';
-    messageEl.style.color = 'black';
-
-    const provider = new firebase.auth.GoogleAuthProvider();
-    provider.addScope('email');
-    provider.addScope('profile');
-
-    auth.signInWithPopup(provider).catch(err => {
-      messageEl.style.color = 'red';
-      messageEl.textContent = err.message || 'Error al iniciar con Google';
-    });
-  });
-
-  // Confirmar código tenant (sin cambios mayores)
-  document.getElementById('code-btn').addEventListener('click', async () => {
-    const code = document.getElementById('tenant-code').value.trim().toUpperCase();
-    const messageEl = document.getElementById('code-message');
-
-    if (!code) {
-      messageEl.textContent = 'Ingresa un código válido';
-      return;
-    }
-
-    const user = auth.currentUser;
-    if (!user) {
-      messageEl.textContent = 'Error de autenticación';
-      return;
-    }
-
-    try {
-      const tenantRef = db.collection('tenants').doc(code);
-      const snap = await tenantRef.get();
-
-      if (!snap.exists || snap.data().assigned === true || snap.data().blocked === true) {
-        messageEl.textContent = snap.data()?.blocked ? 'Código bloqueado por el administrador' : 'Código inválido o ya utilizado';
+      if (!email || !password) {
+        messageEl.style.color = 'red';
+        messageEl.textContent = 'Complete todos los campos';
         return;
       }
 
-      await db.collection('users').doc(user.uid).set({ tenantCode: code });
-      await tenantRef.update({ assigned: true });
+      try {
+        if (isSignup) {
+          await auth.createUserWithEmailAndPassword(email, password);
+          messageEl.style.color = 'green';
+          messageEl.textContent = 'Cuenta creada. Ingrese el código de acceso.';
+        } else {
+          await auth.signInWithEmailAndPassword(email, password);
+        }
 
-      messageEl.style.color = 'green';
-      messageEl.textContent = 'Código asignado correctamente. Redirigiendo...';
-      setTimeout(() => window.location.replace('index.html'), 1500);
-    } catch (error) {
-      messageEl.style.color = 'red';
-      messageEl.textContent = 'Error: ' + error.message;
-    }
-  });
+        // Guardar credenciales si "Recordarme" está marcado
+        if (document.getElementById('remember-me').checked) {
+          localStorage.setItem('rememberMe', 'true');
+          localStorage.setItem('rememberEmail', email);
+          localStorage.setItem('rememberPassword', password);
+        } else {
+          localStorage.removeItem('rememberMe');
+          localStorage.removeItem('rememberEmail');
+          localStorage.removeItem('rememberPassword');
+        }
+      } catch (err) {
+        messageEl.style.color = 'red';
+        messageEl.textContent = err.message || 'Error en autenticación';
+      }
+    });
 
-  // Control de estado de autenticación (sin cambios mayores)
-  auth.onAuthStateChanged(async (user) => {
-    if (!user) {
-      document.getElementById('auth-section').style.display = 'block';
-      document.getElementById('code-section').style.display = 'none';
-      return;
-    }
+    // Recuperar contraseña
+    document.getElementById('forgot-password').addEventListener('click', (e) => {
+      e.preventDefault();
+      const email = document.getElementById('email').value.trim();
+      if (!email) {
+        document.getElementById('message').style.color = 'red';
+        document.getElementById('message').textContent = 'Ingrese su correo para recuperar contraseña';
+        return;
+      }
+      auth.sendPasswordResetEmail(email)
+        .then(() => {
+          document.getElementById('message').style.color = 'green';
+          document.getElementById('message').textContent = 'Email de recuperación enviado';
+        })
+        .catch(err => {
+          document.getElementById('message').style.color = 'red';
+          document.getElementById('message').textContent = err.message;
+        });
+    });
 
-    try {
-      const userDoc = await db.collection('users').doc(user.uid).get();
+    // Autenticación con Google
+    document.getElementById('google-btn').addEventListener('click', () => {
+      const messageEl = document.getElementById('message');
+      messageEl.textContent = 'Iniciando con Google...';
+      messageEl.style.color = 'black';
 
-      if (!userDoc.exists) {
-        document.getElementById('auth-section').style.display = 'none';
-        document.getElementById('code-section').style.display = 'block';
-        document.getElementById('code-message').textContent = '';
+      const provider = new firebase.auth.GoogleAuthProvider();
+      provider.addScope('email');
+      provider.addScope('profile');
+
+      auth.signInWithPopup(provider).catch(err => {
+        messageEl.style.color = 'red';
+        messageEl.textContent = err.message || 'Error al iniciar con Google';
+      });
+    });
+
+    // Confirmar código tenant
+    document.getElementById('code-btn').addEventListener('click', async () => {
+      const code = document.getElementById('tenant-code').value.trim().toUpperCase();
+      const messageEl = document.getElementById('code-message');
+
+      if (!code) {
+        messageEl.textContent = 'Ingresa un código válido';
         return;
       }
 
-      const data = userDoc.data();
-      if (data.tenantCode === 'SUPERADMIN' || data.role === 'superadmin') {
-        window.location.replace('superadmin.html');
+      const user = auth.currentUser;
+      if (!user) {
+        messageEl.textContent = 'Error de autenticación';
         return;
       }
 
-      if (data.tenantCode) {
-        window.location.replace('index.html');
+      try {
+        const tenantRef = db.collection('tenants').doc(code);
+        const snap = await tenantRef.get();
+
+        if (!snap.exists || snap.data().assigned === true || snap.data().blocked === true) {
+          messageEl.textContent = snap.data()?.blocked ? 'Código bloqueado por el administrador' : 'Código inválido o ya utilizado';
+          return;
+        }
+
+        await db.collection('users').doc(user.uid).set({
+          tenantCode: code,
+          email: user.email || null
+        }, { merge: true });
+
+        await tenantRef.update({ assigned: true });
+
+        messageEl.style.color = 'green';
+        messageEl.textContent = 'Código asignado correctamente. Redirigiendo...';
+        setTimeout(() => window.location.replace('index.html'), 1500);
+      } catch (error) {
+        messageEl.style.color = 'red';
+        messageEl.textContent = 'Error: ' + error.message;
       }
-    } catch (error) {
-      console.error('Error verificando usuario:', error);
-      document.getElementById('auth-section').style.display = 'block';
-      document.getElementById('code-section').style.display = 'none';
-    }
-  });
+    });
+
+    // Control de estado de autenticación
+    auth.onAuthStateChanged(async (user) => {
+      if (!user) {
+        document.getElementById('auth-section').style.display = 'block';
+        document.getElementById('code-section').style.display = 'none';
+        return;
+      }
+
+      try {
+        const userDoc = await db.collection('users').doc(user.uid).get();
+
+        if (!userDoc.exists) {
+          document.getElementById('auth-section').style.display = 'none';
+          document.getElementById('code-section').style.display = 'block';
+          document.getElementById('code-message').textContent = '';
+          return;
+        }
+
+        const data = userDoc.data();
+        if (data.tenantCode === 'SUPERADMIN' || data.role === 'superadmin') {
+          window.location.replace('superadmin.html');
+          return;
+        }
+
+        if (data.tenantCode) {
+          window.location.replace('index.html');
+        }
+      } catch (error) {
+        console.error('Error verificando usuario:', error);
+        document.getElementById('auth-section').style.display = 'block';
+        document.getElementById('code-section').style.display = 'none';
+      }
+    });
   </script>
 </body>
 </html>
