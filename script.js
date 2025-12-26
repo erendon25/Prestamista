@@ -324,29 +324,54 @@ function openModal(loanId) {
 
   const phList = document.getElementById('payment-history');
   phList.innerHTML = '';
-  (loan.pagos || []).sort((a, b) => a.fecha.localeCompare(b.fecha)).forEach((p, i) => {
-    const pli = document.createElement('li');
-    pli.style.cssText = 'background:#f8f9fa; padding:12px; margin:8px 0; border-radius:8px; display:flex; justify-content:space-between; align-items:center; box-shadow:0 1px 3px rgba(0,0,0,0.1);';
-    pli.innerHTML = `
-      <span>${p.fecha}: S/${parseFloat(p.monto).toFixed(2)}</span>
-      <div>
-        <span style="cursor:pointer; margin-left:15px; font-size:1.4em;" title="Generar recibo">📄</span>
-        <span style="cursor:pointer; margin-left:15px; font-size:1.4em;" title="Eliminar pago">🗑️</span>
-      </div>
-    `;
+  
+  if (!loan.pagos || loan.pagos.length === 0) {
+    phList.innerHTML = '<li style="text-align:center;padding:20px;color:#666;">No hay pagos registrados.</li>';
+  } else {
+    (loan.pagos || []).sort((a, b) => {
+      const fechaA = a.fecha ? new Date(a.fecha) : new Date(0);
+      const fechaB = b.fecha ? new Date(b.fecha) : new Date(0);
+      return fechaB - fechaA; // Más recientes primero
+    }).forEach((p, i) => {
+      const pli = document.createElement('li');
+      pli.style.cssText = 'background:white; padding:14px; margin:8px 0; border-radius:8px; display:flex; justify-content:space-between; align-items:center; box-shadow:0 2px 4px rgba(0,0,0,0.1); border:1px solid #e2e8f0;';
+      
+      const fechaPago = p.fecha ? new Date(p.fecha).toLocaleDateString('es-PE') : 'Fecha no registrada';
+      
+      pli.innerHTML = `
+        <div style="flex:1;">
+          <strong style="display:block;margin-bottom:4px;">${fechaPago}</strong>
+          <span style="color:#64748b;font-size:0.9em;">Monto: S/${parseFloat(p.monto || 0).toFixed(2)}</span>
+        </div>
+        <div style="display:flex;gap:8px;">
+          <button class="edit-btn" style="padding:8px 16px;font-size:13px;min-width:auto;" title="Generar recibo PDF">
+            📄 Recibo
+          </button>
+          <button class="delete-btn" style="padding:8px 16px;font-size:13px;min-width:auto;" title="Eliminar pago">
+            🗑️ Eliminar
+          </button>
+        </div>
+      `;
 
-    pli.querySelector('span[title="Generar recibo"]').onclick = (e) => {
-      e.stopPropagation();
-      generarReciboPDF(loan, p);
-    };
+      // Botón de generar recibo
+      const btnRecibo = pli.querySelector('button[title="Generar recibo PDF"]');
+      btnRecibo.onclick = (e) => {
+        e.stopPropagation();
+        e.preventDefault();
+        generarReciboPDF(loan, p);
+      };
 
-    pli.querySelector('span[title="Eliminar pago"]').onclick = (e) => {
-      e.stopPropagation();
-      deletePayment(loan.id, i, p.movimientoId);
-    };
+      // Botón de eliminar
+      const btnEliminar = pli.querySelector('button[title="Eliminar pago"]');
+      btnEliminar.onclick = (e) => {
+        e.stopPropagation();
+        e.preventDefault();
+        deletePayment(loan.id, i, p.movimientoId);
+      };
 
-    phList.appendChild(pli);
-  });
+      phList.appendChild(pli);
+    });
+  }
 
   modal.style.display = 'block';
 }
@@ -370,45 +395,178 @@ function openEditModal(loanId) {
 }
 
 function generarReciboPDF(loan, pago) {
-  const { jsPDF } = window.jspdf;
-  const doc = new jsPDF();
+  try {
+    // Verificar que jsPDF esté disponible
+    if (!window.jspdf) {
+      alert('Error: La librería jsPDF no está cargada. Por favor, recarga la página.');
+      console.error('jsPDF no está disponible en window.jspdf');
+      return;
+    }
 
-  doc.setFontSize(18);
-  doc.text('RECIBO DE PAGO', 105, 20, { align: 'center' });
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF();
+    
+    const info = getStatusAndSaldo(loan);
+    const fechaActual = new Date();
+    const fechaPago = pago.fecha ? new Date(pago.fecha) : fechaActual;
+    
+    // Calcular cuotas pagadas hasta este pago (incluyendo este pago)
+    const pagosHastaEste = (loan.pagos || []).filter(p => {
+      const fechaP = p.fecha ? new Date(p.fecha) : new Date();
+      return fechaP <= fechaPago;
+    });
+    const cuotaNumero = pagosHastaEste.length;
+    
+    // Calcular información del préstamo
+    const capital = parseFloat(loan.capital || 0);
+    const interesPorcentaje = parseFloat(loan.interes || 0);
+    const interesTotal = capital * (interesPorcentaje / 100);
+    const deudaTotal = capital + interesTotal;
 
-  doc.setFontSize(12);
-  doc.text(`Cliente: ${loan.nombre}`, 20, 40);
-  doc.text(`Teléfono: ${loan.telefono || 'No registrado'}`, 20, 50);
-  doc.text(`Fecha del pago: ${pago.fecha}`, 20, 60);
-  doc.text(`Monto pagado: S/${parseFloat(pago.monto).toFixed(2)}`, 20, 70);
-  doc.text(`Capital original: S/${parseFloat(loan.capital).toFixed(2)}`, 20, 80);
-  doc.text(`Método de pago: ${loan.metodoPago.charAt(0).toUpperCase() + loan.metodoPago.slice(1)}`, 20, 90);
-  doc.text(`Cuotas: ${getStatusAndSaldo(loan).cuotasPagadas + 1} de ${loan.cantidadPeriodos}`, 20, 100);
+    // Encabezado
+    doc.setFillColor(99, 102, 241);
+    doc.rect(0, 0, 210, 40, 'F');
+    
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(24);
+    doc.setFont(undefined, 'bold');
+    doc.text('RECIBO DE PAGO', 105, 20, { align: 'center' });
+    
+    doc.setFontSize(12);
+    doc.setFont(undefined, 'normal');
+    doc.text('Sistema de Control de Préstamos', 105, 30, { align: 'center' });
 
-  doc.setFontSize(10);
-  doc.text(`Generado el: ${new Date().toLocaleDateString('es-PE')} ${new Date().toLocaleTimeString('es-PE')}`, 20, 130);
-
-  doc.save(`recibo_${loan.nombre.replace(/\s+/g, '_')}_${pago.fecha}.pdf`);
+    // Información del recibo
+    doc.setTextColor(0, 0, 0);
+    doc.setFontSize(14);
+    doc.setFont(undefined, 'bold');
+    doc.text('INFORMACIÓN DEL CLIENTE', 20, 55);
+    
+    doc.setFontSize(11);
+    doc.setFont(undefined, 'normal');
+    let yPos = 65;
+    doc.text(`Nombre: ${loan.nombre}`, 20, yPos);
+    yPos += 8;
+    doc.text(`Teléfono: ${loan.telefono || 'No registrado'}`, 20, yPos);
+    
+    yPos += 15;
+    doc.setFont(undefined, 'bold');
+    doc.setFontSize(14);
+    doc.text('DETALLES DEL PAGO', 20, yPos);
+    
+    yPos += 10;
+    doc.setFont(undefined, 'normal');
+    doc.setFontSize(11);
+    doc.text(`Fecha del pago: ${fechaPago.toLocaleDateString('es-PE', { 
+      year: 'numeric', 
+      month: 'long', 
+      day: 'numeric' 
+    })}`, 20, yPos);
+    yPos += 8;
+    doc.setFont(undefined, 'bold');
+    doc.text(`Monto pagado: S/${parseFloat(pago.monto).toFixed(2)}`, 20, yPos);
+    
+    yPos += 15;
+    doc.setFont(undefined, 'normal');
+    doc.setFontSize(14);
+    doc.setFont(undefined, 'bold');
+    doc.text('INFORMACIÓN DEL PRÉSTAMO', 20, yPos);
+    
+    yPos += 10;
+    doc.setFont(undefined, 'normal');
+    doc.setFontSize(11);
+    doc.text(`Capital original: S/${parseFloat(loan.capital).toFixed(2)}`, 20, yPos);
+    yPos += 8;
+    doc.text(`Interés por período: ${parseFloat(loan.interes).toFixed(2)}%`, 20, yPos);
+    yPos += 8;
+    doc.text(`Método de pago: ${loan.metodoPago.charAt(0).toUpperCase() + loan.metodoPago.slice(1)}`, 20, yPos);
+    yPos += 8;
+    doc.text(`Cuota número: ${cuotaNumero} de ${loan.cantidadPeriodos}`, 20, yPos);
+    yPos += 8;
+    
+    // Calcular saldo después de este pago
+    const totalPagadoHastaEste = pagosHastaEste.reduce((sum, p) => sum + parseFloat(p.monto || 0), 0);
+    const saldoDespues = Math.max(0, deudaTotal - totalPagadoHastaEste);
+    
+    doc.setFont(undefined, 'bold');
+    doc.text(`Saldo pendiente después del pago: S/${saldoDespues.toFixed(2)}`, 20, yPos);
+    
+    // Línea separadora
+    yPos += 15;
+    doc.setDrawColor(200, 200, 200);
+    doc.line(20, yPos, 190, yPos);
+    
+    // Pie de página
+    yPos += 15;
+    doc.setFontSize(9);
+    doc.setFont(undefined, 'italic');
+    doc.setTextColor(100, 100, 100);
+    doc.text(`Recibo generado el ${fechaActual.toLocaleDateString('es-PE')} a las ${fechaActual.toLocaleTimeString('es-PE')}`, 20, yPos);
+    yPos += 8;
+    doc.text('Este documento es una evidencia del pago realizado.', 20, yPos);
+    
+    // Guardar PDF
+    const nombreArchivo = `recibo_${loan.nombre.replace(/\s+/g, '_')}_${fechaPago.toISOString().slice(0, 10)}.pdf`;
+    doc.save(nombreArchivo);
+    
+  } catch (error) {
+    console.error('Error al generar el recibo PDF:', error);
+    alert('Error al generar el recibo. Por favor, intente nuevamente.');
+  }
 }
 
 async function deletePayment(loanId, paymentIndex, movimientoId) {
-  if (!confirm('¿Está seguro de eliminar este pago? Esto afectará el contador de cuotas y el resumen financiero.')) return;
+  if (!confirm('¿Está seguro de eliminar este pago? Esto afectará el contador de cuotas, el resumen financiero y el historial de movimientos.')) return;
 
   try {
     const loan = loans.find(l => l.id === loanId);
-    if (!loan) return;
-
-    loan.pagos.splice(paymentIndex, 1);
-    await getLoansCollection().doc(loanId).update({ pagos: loan.pagos });
-
-    if (movimientoId) {
-      await getMovimientosCollection().doc(movimientoId).delete();
+    if (!loan) {
+      alert('Error: No se encontró el préstamo.');
+      return;
     }
 
+    // Buscar el pago por movimientoId en lugar de usar el índice
+    let pagoAEliminar = null;
+    if (movimientoId) {
+      const index = (loan.pagos || []).findIndex(p => p.movimientoId === movimientoId);
+      if (index !== -1) {
+        pagoAEliminar = loan.pagos[index];
+        loan.pagos.splice(index, 1);
+      }
+    } else {
+      // Si no hay movimientoId, usar el índice como fallback
+      if (paymentIndex >= 0 && paymentIndex < (loan.pagos || []).length) {
+        pagoAEliminar = loan.pagos[paymentIndex];
+        loan.pagos.splice(paymentIndex, 1);
+      }
+    }
+
+    if (!pagoAEliminar) {
+      alert('Error: No se encontró el pago a eliminar.');
+      return;
+    }
+
+    // Actualizar el préstamo sin el pago eliminado
+    await getLoansCollection().doc(loanId).update({ pagos: loan.pagos });
+
+    // Eliminar el movimiento de la colección de movimientos
+    if (movimientoId) {
+      try {
+        await getMovimientosCollection().doc(movimientoId).delete();
+      } catch (movError) {
+        console.warn('No se pudo eliminar el movimiento, pero el pago fue eliminado del préstamo:', movError);
+      }
+    }
+
+    // Recargar el modal con los datos actualizados
     openModal(loanId);
+    
+    // El resumen financiero y el historial se actualizarán automáticamente
+    // gracias a los listeners de Firestore (setupRealtimeListeners)
+    
   } catch (error) {
-    alert('Error al eliminar el pago.');
-    console.error(error);
+    console.error('Error al eliminar el pago:', error);
+    alert('Error al eliminar el pago. Por favor, intente nuevamente.');
   }
 }
 
