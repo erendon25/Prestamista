@@ -15,55 +15,106 @@
   <script src="firebase-config.js"></script>
 </head>
 <body id="login-container">
-  <div class="container">
-    <h1>Control de Préstamos</h1>
-
-    <!-- Sección principal de autenticación -->
-    <div id="auth-section">
-      <h2 id="form-title">Iniciar Sesión</h2>
-
-      <!-- Formulario email/contraseña -->
-      <form id="email-form">
-        <input type="email" id="email" placeholder="Correo electrónico" required>
-        <input type="password" id="password" placeholder="Contraseña" required>
-
-        <!-- Checkbox y enlace en la misma línea -->
-        <div style="display: flex; justify-content: space-between; align-items: center; margin: 15px 0;">
-          <div style="display: flex; align-items: center;">
-            <input type="checkbox" id="remember-me" style="width: 20px; height: 20px; margin-right: 10px; cursor: pointer;">
-            <label for="remember-me" style="color: #555; font-size: 1em; cursor: pointer; user-select: none;">Recordarme</label>
-          </div>
-          <a href="#" id="forgot-password" style="color: #007bff; font-size: 0.9em; text-decoration: none;">¿Olvidaste tu contraseña?</a>
-        </div>
-
-        <button type="submit" id="auth-btn">Iniciar Sesión</button>
-      </form>
-
-      <div style="margin: 20px 0; position: relative;">
-        <hr style="border: none; border-top: 1px solid #ddd;">
-        <span style="background: white; padding: 0 10px; position: absolute; top: -10px; left: 50%; transform: translateX(-50%); color: #666; font-size: 0.9em;">o</span>
+  <div class="login-wrapper">
+    <div class="login-container">
+      <div class="login-header">
+        <h1>Control de Préstamos</h1>
+        <p class="login-subtitle">Gestiona tus préstamos de manera eficiente</p>
       </div>
 
-      <!-- Botón Google -->
-      <button id="google-btn" style="background: #4285f4; color: white; padding: 14px; width: 100%; border: none; border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer;">
-        <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google" style="width: 20px; vertical-align: middle; margin-right: 10px;">
-        Continuar con Google
-      </button>
+      <!-- Sección principal de autenticación -->
+      <div id="auth-section" class="auth-section">
+        <h2 id="form-title" class="form-title">Iniciar Sesión</h2>
 
-      <p id="toggle-text" style="margin-top: 20px;">
-        ¿No tienes cuenta? <a href="#" id="toggle-link">Regístrate</a>
-      </p>
+        <!-- Formulario email/contraseña -->
+        <form id="email-form" class="login-form">
+          <div class="form-group">
+            <label for="email" class="form-label">Correo electrónico</label>
+            <div class="input-wrapper">
+              <svg class="input-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
+                <polyline points="22,6 12,13 2,6"></polyline>
+              </svg>
+              <input type="email" id="email" class="form-input" placeholder="tu@correo.com" required>
+            </div>
+          </div>
 
-      <p id="message" style="color: red; margin-top: 15px; min-height: 24px;"></p>
-    </div>
+          <div class="form-group">
+            <label for="password" class="form-label">Contraseña</label>
+            <div class="input-wrapper">
+              <svg class="input-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+              </svg>
+              <input type="password" id="password" class="form-input" placeholder="Tu contraseña" required>
+            </div>
+          </div>
 
-    <!-- Sección para código tenant (primer inicio) -->
-    <div id="code-section" style="display: none;">
-      <h2>Bienvenido por primera vez</h2>
-      <p>Ingresa el código de acceso proporcionado por el administrador.</p>
-      <input type="text" id="tenant-code" placeholder="Código (ej. ABC123)" style="text-transform: uppercase; padding: 14px; width: 100%; box-sizing: border-box;" required>
-      <button id="code-btn" style="margin-top: 15px; width: 100%;">Confirmar Código</button>
-      <p id="code-message" style="color: red; margin-top: 10px;"></p>
+          <!-- Checkbox y enlace -->
+          <div class="form-options">
+            <label class="checkbox-label" for="remember-me">
+              <input type="checkbox" id="remember-me" class="checkbox-input">
+              <span class="checkbox-text">Recordarme</span>
+            </label>
+            <a href="#" id="forgot-password" class="forgot-link">¿Olvidaste tu contraseña?</a>
+          </div>
+
+          <button type="submit" id="auth-btn" class="btn-primary">
+            <span class="btn-text">Iniciar Sesión</span>
+            <svg class="btn-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M5 12h14M12 5l7 7-7 7"/>
+            </svg>
+          </button>
+        </form>
+
+        <div class="divider">
+          <span class="divider-text">o</span>
+        </div>
+
+        <!-- Botón Google -->
+        <button id="google-btn" class="btn-google">
+          <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google" class="google-icon">
+          Continuar con Google
+        </button>
+
+        <div class="toggle-section">
+          <p id="toggle-text" class="toggle-text">
+            ¿No tienes cuenta? <a href="#" id="toggle-link" class="toggle-link">Regístrate</a>
+          </p>
+        </div>
+
+        <div id="message" class="message"></div>
+      </div>
+
+      <!-- Sección para código tenant (primer inicio) -->
+      <div id="code-section" class="code-section" style="display: none;">
+        <div class="code-header">
+          <h2>Bienvenido por primera vez</h2>
+          <p class="code-description">Ingresa el código de acceso proporcionado por el administrador para completar tu registro.</p>
+        </div>
+        
+        <form id="code-form" class="code-form">
+          <div class="form-group">
+            <label for="tenant-code" class="form-label">Código de acceso</label>
+            <input 
+              type="text" 
+              id="tenant-code" 
+              class="form-input code-input" 
+              placeholder="Ej: ABC123" 
+              maxlength="6"
+              required
+            >
+          </div>
+          <button type="button" id="code-btn" class="btn-primary">
+            <span class="btn-text">Confirmar Código</span>
+            <svg class="btn-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="20 6 9 17 4 12"></polyline>
+            </svg>
+          </button>
+        </form>
+        
+        <div id="code-message" class="message"></div>
+      </div>
     </div>
   </div>
 
@@ -99,15 +150,24 @@
       const messageEl = document.getElementById('message');
 
       if (!email || !password) {
-        messageEl.style.color = 'red';
+        messageEl.className = 'message';
+        messageEl.style.color = '';
+        messageEl.style.background = 'rgba(239, 68, 68, 0.1)';
+        messageEl.style.border = '1px solid rgba(239, 68, 68, 0.2)';
+        messageEl.style.color = 'var(--danger-color)';
         messageEl.textContent = 'Complete todos los campos';
         return;
       }
 
       try {
+        messageEl.textContent = '';
+        messageEl.className = 'message';
+        
         if (isSignup) {
           await auth.createUserWithEmailAndPassword(email, password);
-          messageEl.style.color = 'green';
+          messageEl.style.background = 'rgba(34, 197, 94, 0.1)';
+          messageEl.style.border = '1px solid rgba(34, 197, 94, 0.2)';
+          messageEl.style.color = 'var(--success-color)';
           messageEl.textContent = 'Cuenta creada. Ingrese el código de acceso.';
         } else {
           await auth.signInWithEmailAndPassword(email, password);
@@ -124,7 +184,9 @@
           localStorage.removeItem('rememberPassword');
         }
       } catch (err) {
-        messageEl.style.color = 'red';
+        messageEl.style.background = 'rgba(239, 68, 68, 0.1)';
+        messageEl.style.border = '1px solid rgba(239, 68, 68, 0.2)';
+        messageEl.style.color = 'var(--danger-color)';
         messageEl.textContent = err.message || 'Error en autenticación';
       }
     });
@@ -133,19 +195,31 @@
     document.getElementById('forgot-password').addEventListener('click', (e) => {
       e.preventDefault();
       const email = document.getElementById('email').value.trim();
+      const messageEl = document.getElementById('message');
       if (!email) {
-        document.getElementById('message').style.color = 'red';
-        document.getElementById('message').textContent = 'Ingrese su correo para recuperar contraseña';
+        messageEl.style.background = 'rgba(239, 68, 68, 0.1)';
+        messageEl.style.border = '1px solid rgba(239, 68, 68, 0.2)';
+        messageEl.style.color = 'var(--danger-color)';
+        messageEl.textContent = 'Ingrese su correo para recuperar contraseña';
         return;
       }
+      messageEl.textContent = 'Enviando...';
+      messageEl.style.background = 'rgba(99, 102, 241, 0.1)';
+      messageEl.style.border = '1px solid rgba(99, 102, 241, 0.2)';
+      messageEl.style.color = 'var(--primary-color)';
+      
       auth.sendPasswordResetEmail(email)
         .then(() => {
-          document.getElementById('message').style.color = 'green';
-          document.getElementById('message').textContent = 'Email de recuperación enviado';
+          messageEl.style.background = 'rgba(34, 197, 94, 0.1)';
+          messageEl.style.border = '1px solid rgba(34, 197, 94, 0.2)';
+          messageEl.style.color = 'var(--success-color)';
+          messageEl.textContent = 'Email de recuperación enviado';
         })
         .catch(err => {
-          document.getElementById('message').style.color = 'red';
-          document.getElementById('message').textContent = err.message;
+          messageEl.style.background = 'rgba(239, 68, 68, 0.1)';
+          messageEl.style.border = '1px solid rgba(239, 68, 68, 0.2)';
+          messageEl.style.color = 'var(--danger-color)';
+          messageEl.textContent = err.message;
         });
     });
 
@@ -153,30 +227,44 @@
     document.getElementById('google-btn').addEventListener('click', () => {
       const messageEl = document.getElementById('message');
       messageEl.textContent = 'Iniciando con Google...';
-      messageEl.style.color = 'black';
+      messageEl.style.background = 'rgba(99, 102, 241, 0.1)';
+      messageEl.style.border = '1px solid rgba(99, 102, 241, 0.2)';
+      messageEl.style.color = 'var(--primary-color)';
 
       const provider = new firebase.auth.GoogleAuthProvider();
       provider.addScope('email');
       provider.addScope('profile');
 
       auth.signInWithPopup(provider).catch(err => {
-        messageEl.style.color = 'red';
+        messageEl.style.background = 'rgba(239, 68, 68, 0.1)';
+        messageEl.style.border = '1px solid rgba(239, 68, 68, 0.2)';
+        messageEl.style.color = 'var(--danger-color)';
         messageEl.textContent = err.message || 'Error al iniciar con Google';
       });
     });
 
     // Confirmar código tenant
-    document.getElementById('code-btn').addEventListener('click', async () => {
+    document.getElementById('code-btn').addEventListener('click', async (e) => {
+      e.preventDefault();
       const code = document.getElementById('tenant-code').value.trim().toUpperCase();
       const messageEl = document.getElementById('code-message');
 
       if (!code) {
+        messageEl.style.background = 'rgba(239, 68, 68, 0.1)';
+        messageEl.style.border = '1px solid rgba(239, 68, 68, 0.2)';
+        messageEl.style.color = 'var(--danger-color)';
         messageEl.textContent = 'Ingresa un código válido';
         return;
       }
+      
+      messageEl.textContent = '';
+      messageEl.className = 'message';
 
       const user = auth.currentUser;
       if (!user) {
+        messageEl.style.background = 'rgba(239, 68, 68, 0.1)';
+        messageEl.style.border = '1px solid rgba(239, 68, 68, 0.2)';
+        messageEl.style.color = 'var(--danger-color)';
         messageEl.textContent = 'Error de autenticación';
         return;
       }
@@ -186,6 +274,9 @@
         const snap = await tenantRef.get();
 
         if (!snap.exists || snap.data().assigned === true || snap.data().blocked === true) {
+          messageEl.style.background = 'rgba(239, 68, 68, 0.1)';
+          messageEl.style.border = '1px solid rgba(239, 68, 68, 0.2)';
+          messageEl.style.color = 'var(--danger-color)';
           messageEl.textContent = snap.data()?.blocked ? 'Código bloqueado por el administrador' : 'Código inválido o ya utilizado';
           return;
         }
@@ -197,11 +288,15 @@
 
         await tenantRef.update({ assigned: true });
 
-        messageEl.style.color = 'green';
+        messageEl.style.background = 'rgba(34, 197, 94, 0.1)';
+        messageEl.style.border = '1px solid rgba(34, 197, 94, 0.2)';
+        messageEl.style.color = 'var(--success-color)';
         messageEl.textContent = 'Código asignado correctamente. Redirigiendo...';
         setTimeout(() => window.location.replace('index.html'), 1500);
       } catch (error) {
-        messageEl.style.color = 'red';
+        messageEl.style.background = 'rgba(239, 68, 68, 0.1)';
+        messageEl.style.border = '1px solid rgba(239, 68, 68, 0.2)';
+        messageEl.style.color = 'var(--danger-color)';
         messageEl.textContent = 'Error: ' + error.message;
       }
     });
