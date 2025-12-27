@@ -591,24 +591,11 @@ li:hover {
 .login-container {
   background: var(--bg-secondary);
   border-radius: var(--radius-xl);
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3), 0 0 0 1px rgba(255, 255, 255, 0.1);
+  box-shadow: var(--shadow-xl);
   padding: 50px 40px;
   width: 100%;
   animation: fadeIn 0.5s ease;
   box-sizing: border-box;
-  position: relative;
-  overflow: hidden;
-}
-
-.login-container::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 4px;
-  background: linear-gradient(90deg, var(--primary-color), var(--primary-light), var(--secondary-color));
-  opacity: 0.8;
 }
 
 .login-header {
@@ -624,20 +611,6 @@ li:hover {
   background-clip: text;
   font-size: 2.5em;
   font-weight: 700;
-  letter-spacing: -0.5px;
-  position: relative;
-  animation: fadeInDown 0.6s ease;
-}
-
-@keyframes fadeInDown {
-  from {
-    opacity: 0;
-    transform: translateY(-20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
 }
 
 .login-subtitle {
@@ -706,9 +679,9 @@ li:hover {
 
 .input-icon {
   position: absolute;
-  left: 18px;
-  width: 22px;
-  height: 22px;
+  left: 16px;
+  width: 20px;
+  height: 20px;
   color: var(--text-secondary);
   pointer-events: none;
   transition: var(--transition);
@@ -717,29 +690,25 @@ li:hover {
 
 .form-input {
   width: 100%;
-  padding: 16px 18px 16px 50px;
-  font-size: 16px;
+  padding: 14px 16px 14px 48px;
+  font-size: 15px;
   border: 2px solid var(--border-color);
   border-radius: var(--radius-md);
   box-sizing: border-box;
   font-family: inherit;
   transition: var(--transition);
-  background: var(--bg-primary);
+  background: white;
   color: var(--text-primary);
-  min-height: 52px;
 }
 
 .form-input:focus {
   outline: none;
   border-color: var(--primary-color);
   box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
-  background: white;
-  transform: translateY(-1px);
 }
 
 .input-wrapper:focus-within .input-icon {
   color: var(--primary-color);
-  transform: scale(1.1);
 }
 
 .form-input::placeholder {
@@ -811,7 +780,7 @@ li:hover {
 
 .btn-primary {
   width: 100%;
-  padding: 16px;
+  padding: 15px;
   font-size: 16px;
   font-weight: 600;
   color: white;
@@ -820,60 +789,27 @@ li:hover {
   border-radius: var(--radius-md);
   cursor: pointer;
   transition: var(--transition);
-  box-shadow: 0 4px 15px rgba(99, 102, 241, 0.4);
+  box-shadow: var(--shadow-md);
   font-family: inherit;
   margin-bottom: 25px;
-  position: relative;
-  overflow: hidden;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 10px;
-}
-
-.btn-primary::before {
-  content: '';
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  width: 0;
-  height: 0;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.2);
-  transform: translate(-50%, -50%);
-  transition: width 0.6s, height 0.6s;
-}
-
-.btn-primary:hover::before {
-  width: 300px;
-  height: 300px;
+  gap: 8px;
 }
 
 .btn-primary:hover {
   transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(99, 102, 241, 0.5);
+  box-shadow: var(--shadow-lg);
 }
 
 .btn-primary:active {
   transform: translateY(0);
-  box-shadow: 0 2px 10px rgba(99, 102, 241, 0.4);
-}
-
-.btn-text {
-  position: relative;
-  z-index: 1;
 }
 
 .btn-icon {
-  width: 20px;
-  height: 20px;
-  position: relative;
-  z-index: 1;
-  transition: var(--transition);
-}
-
-.btn-primary:hover .btn-icon {
-  transform: translateX(4px);
+  width: 18px;
+  height: 18px;
 }
 
 .divider {
@@ -903,7 +839,7 @@ li:hover {
 
 .btn-google {
   width: 100%;
-  padding: 16px;
+  padding: 15px;
   font-size: 16px;
   font-weight: 600;
   color: #4285f4;
@@ -918,24 +854,7 @@ li:hover {
   gap: 12px;
   font-family: inherit;
   margin-bottom: 30px;
-  box-shadow: 0 2px 8px rgba(66, 133, 244, 0.1);
-  position: relative;
-  overflow: hidden;
-}
-
-.btn-google::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: -100%;
-  width: 100%;
-  height: 100%;
-  background: linear-gradient(90deg, transparent, rgba(66, 133, 244, 0.1), transparent);
-  transition: left 0.5s;
-}
-
-.btn-google:hover::before {
-  left: 100%;
+  box-shadow: var(--shadow-sm);
 }
 
 .btn-google:hover {
@@ -943,7 +862,7 @@ li:hover {
   color: white;
   border-color: #4285f4;
   transform: translateY(-2px);
-  box-shadow: 0 4px 15px rgba(66, 133, 244, 0.3);
+  box-shadow: var(--shadow-md);
 }
 
 .btn-google:hover .google-icon {
