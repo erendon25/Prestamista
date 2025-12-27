@@ -602,18 +602,49 @@ function renderHistory() {
     deleteIcon.style.cssText = 'position:absolute;top:10px;right:15px;font-size:1.4em;cursor:pointer;';
     deleteIcon.onclick = async (e) => {
       e.stopPropagation();
-      if (confirm('¿Eliminar este movimiento?')) {
+      if (confirm('¿Eliminar este movimiento? Esto también eliminará el pago del detalle del préstamo si corresponde.')) {
         try {
           if (mov.tipo === 'pago' && mov.loanId) {
             const loanDoc = await getLoansCollection().doc(mov.loanId).get();
             if (loanDoc.exists) {
               let pagos = loanDoc.data().pagos || [];
-              pagos = pagos.filter(p => p.movimientoId !== mov.id);
+              const movDate = mov.timestamp?.toDate?.() || new Date();
+              const movDateStr = movDate.toISOString().slice(0, 10); // YYYY-MM-DD
+              
+              // Buscar y eliminar el pago que coincida con el movimientoId O con la fecha y monto
+              pagos = pagos.filter(p => {
+                // Si tiene movimientoId y coincide, eliminar directamente
+                if (p.movimientoId === mov.id) {
+                  return false; // Eliminar este pago
+                }
+                
+                // Si no tiene movimientoId o no coincide por ID, comparar por fecha y monto
+                const pagoDate = p.fecha ? new Date(p.fecha).toISOString().slice(0, 10) : null;
+                const mismoDia = pagoDate === movDateStr;
+                const mismoMonto = Math.abs(parseFloat(p.monto || 0) - parseFloat(mov.monto || 0)) < 0.01;
+                
+                // Si es el mismo día y mismo monto, es el mismo pago
+                if (mismoDia && mismoMonto) {
+                  return false; // Eliminar este pago
+                }
+                
+                return true; // Mantener este pago
+              });
+              
               await getLoansCollection().doc(mov.loanId).update({ pagos });
+              
+              // Si el modal está abierto, recargarlo
+              const modal = document.getElementById('modal');
+              if (modal && modal.style.display === 'block') {
+                openModal(mov.loanId);
+              }
             }
           }
+          
+          // Eliminar el movimiento
           await getMovimientosCollection().doc(mov.id).delete();
         } catch (err) {
+          console.error('Error al eliminar el movimiento:', err);
           alert('Error al eliminar el movimiento.');
         }
       }
@@ -757,16 +788,20 @@ function setupEventListeners() {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     let cobradoHoy = 0;
+    
+    // Calcular el cobrado neto de hoy (pagos - gastos)
     movimientos.forEach(m => {
       const mDate = m.timestamp?.toDate?.() || new Date();
-      if (mDate.toDateString() === today.toDateString()) {
-        if (m.tipo === 'pago') cobradoHoy += parseFloat(m.monto);
-        if (m.tipo === 'gasto') cobradoHoy -= parseFloat(m.monto);
+      mDate.setHours(0, 0, 0, 0);
+      if (mDate.getTime() === today.getTime()) {
+        if (m.tipo === 'pago') cobradoHoy += parseFloat(m.monto || 0);
+        if (m.tipo === 'gasto') cobradoHoy -= parseFloat(m.monto || 0);
       }
     });
 
+    // Validar que el gasto no exceda lo cobrado hoy
     if (monto > cobradoHoy) {
-      alert('El gasto no puede exceder el cobrado neto del día.');
+      alert(`El gasto no puede exceder el cobrado neto del día (S/${cobradoHoy.toFixed(2)}).`);
       return;
     }
 
@@ -781,6 +816,7 @@ function setupEventListeners() {
       document.getElementById('expense-motive').value = '';
       document.getElementById('expense-amount').value = '';
     } catch (error) {
+      console.error('Error al guardar el gasto:', error);
       alert('Error al guardar el gasto.');
     }
   };
