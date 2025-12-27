@@ -3,26 +3,94 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Superadmin - Generar Códigos</title>
+<title>Panel Superadmin - Control de Préstamos</title>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
 <script src="firebase-config.js"></script>
 <link rel="stylesheet" href="style.css">
 </head>
-<body style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; display: flex; align-items: center; justify-content: center;">
-<div class="container" style="text-align: center;">
-<h1>Panel Superadmin</h1>
-<button id="generate-code" style="padding: 15px 30px; font-size: 18px; background: #28a745; color: white; border: none; border-radius: 8px; cursor: pointer; margin-bottom: 20px;">Generar Nuevo Código</button>
-<h2 style="margin-top: 30px;">Códigos Generados</h2>
-<ul id="codes-list" style="list-style: none; padding: 0; max-width: 600px; margin: auto;"></ul>
+<body id="superadmin-body">
+<div class="superadmin-container">
+  <!-- Header -->
+  <header class="superadmin-header">
+    <div class="header-content">
+      <h1>Panel Superadmin</h1>
+      <button id="logout-btn" class="logout-btn">Cerrar Sesión</button>
+    </div>
+  </header>
 
-<div id="global-usage" style="margin-top:40px; padding:20px; background:#f8f9fa; border-radius:10px; max-width:600px; margin-left:auto; margin-right:auto;">
-  <h3>Consumo Diario Global (Firestore)</h3>
-  <p>Cargando estadísticas...</p>
+  <!-- Dashboard Stats -->
+  <section class="dashboard-stats">
+    <div class="stat-card">
+      <div class="stat-icon">👥</div>
+      <div class="stat-info">
+        <h3 id="total-users">0</h3>
+        <p>Usuarios Activos</p>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon">🔑</div>
+      <div class="stat-info">
+        <h3 id="total-codes">0</h3>
+        <p>Total Códigos</p>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon">✅</div>
+      <div class="stat-info">
+        <h3 id="assigned-codes">0</h3>
+        <p>Códigos Asignados</p>
+      </div>
+    </div>
+    
+  </section>
+
+  <!-- Actions Section -->
+  <section class="actions-section">
+    <div class="action-group">
+      <button id="generate-code" class="main-action-btn">
+        <span>➕</span> Generar Nuevo Código
+      </button>
+      <button id="refresh-btn" class="main-action-btn secondary">
+        <span>🔄</span> Actualizar
+      </button>
+    </div>
+    
+    <!-- Search and Filters -->
+    <div class="search-filters">
+      <input type="text" id="search-codes" placeholder="Buscar código..." class="search-input">
+      <select id="filter-status" class="filter-select">
+        <option value="all">Todos</option>
+        <option value="available">Disponibles</option>
+        <option value="assigned">Asignados</option>
+        <option value="blocked">Bloqueados</option>
+      </select>
+    </div>
+  </section>
+
+  <!-- Codes List -->
+  <section class="codes-section">
+    <h2>Códigos Generados</h2>
+    <div id="codes-list" class="codes-list"></div>
+  </section>
+
+  <!-- Global Usage -->
+  <section class="usage-section">
+    <div id="global-usage" class="usage-card">
+      <h3>Consumo Diario Global (Firestore)</h3>
+      <p>Cargando estadísticas...</p>
+    </div>
+  </section>
 </div>
 
-<button id="logout-btn" style="margin-top: 30px; padding: 12px 25px; background: #dc3545; color: white; border: none; border-radius: 8px;">Cerrar Sesión</button>
+<!-- Modal para detalles del tenant -->
+<div id="tenant-modal" class="modal">
+  <div class="modal-content">
+    <span class="close-modal">&times;</span>
+    <h2>Detalles del Tenant</h2>
+    <div id="tenant-modal-body"></div>
+  </div>
 </div>
 
 <script src="superadmin.js"></script>
