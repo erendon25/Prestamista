@@ -776,7 +776,10 @@ function setupEventListeners() {
     document.getElementById('expense-modal').style.display = 'block';
   };
 
-  document.getElementById('save-expense').onclick = async () => {
+  // Formulario de gasto
+  document.getElementById('expense-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    
     const motivo = document.getElementById('expense-motive').value.trim();
     const monto = parseFloat(document.getElementById('expense-amount').value);
 
@@ -813,13 +816,12 @@ function setupEventListeners() {
         timestamp: firebase.firestore.Timestamp.now()
       });
       document.getElementById('expense-modal').style.display = 'none';
-      document.getElementById('expense-motive').value = '';
-      document.getElementById('expense-amount').value = '';
+      document.getElementById('expense-form').reset();
     } catch (error) {
       console.error('Error al guardar el gasto:', error);
-      alert('Error al guardar el gasto.');
+      alert('Error al guardar el gasto. Por favor, intente nuevamente.');
     }
-  };
+  });
 
   // Historial
   document.getElementById('history-btn').onclick = () => {
