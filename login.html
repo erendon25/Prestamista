@@ -1,10 +1,11 @@
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Iniciar Sesión / Registrarse</title>
-  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="style.css?v=1.1">
 
   <!-- Firebase SDK -->
   <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
@@ -14,6 +15,7 @@
   <!-- Configuración Firebase -->
   <script src="firebase-config.js"></script>
 </head>
+
 <body id="login-container">
   <div class="login-wrapper">
     <div class="login-container">
@@ -31,7 +33,8 @@
           <div class="form-group">
             <label for="email" class="form-label">Correo electrónico</label>
             <div class="input-wrapper">
-              <svg class="input-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <svg class="input-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
+                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
                 <polyline points="22,6 12,13 2,6"></polyline>
               </svg>
@@ -42,7 +45,8 @@
           <div class="form-group">
             <label for="password" class="form-label">Contraseña</label>
             <div class="input-wrapper">
-              <svg class="input-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <svg class="input-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
+                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
                 <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
               </svg>
@@ -61,8 +65,9 @@
 
           <button type="submit" id="auth-btn" class="btn-primary">
             <span class="btn-text">Iniciar Sesión</span>
-            <svg class="btn-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M5 12h14M12 5l7 7-7 7"/>
+            <svg class="btn-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
+              stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M5 12h14M12 5l7 7-7 7" />
             </svg>
           </button>
         </form>
@@ -73,7 +78,8 @@
 
         <!-- Botón Google -->
         <button id="google-btn" class="btn-google">
-          <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google" class="google-icon">
+          <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google"
+            class="google-icon">
           Continuar con Google
         </button>
 
@@ -90,33 +96,30 @@
       <div id="code-section" class="code-section" style="display: none;">
         <div class="code-header">
           <h2>Bienvenido por primera vez</h2>
-          <p class="code-description">Ingresa el código de acceso proporcionado por el administrador para completar tu registro.</p>
+          <p class="code-description">Ingresa el código de acceso proporcionado por el administrador para completar tu
+            registro.</p>
         </div>
-        
+
         <form id="code-form" class="code-form">
           <div class="form-group">
             <label for="tenant-code" class="form-label">Código de acceso</label>
-            <input 
-              type="text" 
-              id="tenant-code" 
-              class="form-input code-input" 
-              placeholder="Ej: ABC123" 
-              maxlength="6"
-              required
-            >
+            <input type="text" id="tenant-code" class="form-input code-input" placeholder="Ej: ABC123" maxlength="6"
+              required>
           </div>
           <button type="button" id="code-btn" class="btn-primary">
             <span class="btn-text">Confirmar Código</span>
-            <svg class="btn-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <svg class="btn-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
+              stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <polyline points="20 6 9 17 4 12"></polyline>
             </svg>
           </button>
 
-          <button type="button" id="back-to-login-btn" class="btn-text-only" style="background: none; border: none; color: var(--text-secondary); cursor: pointer; text-decoration: underline; margin-top: 15px; width: 100%; font-size: 0.9em; padding: 10px;">
+          <button type="button" id="back-to-login-btn" class="btn-text-only"
+            style="background: none; border: none; color: var(--text-secondary); cursor: pointer; text-decoration: underline; margin-top: 15px; width: 100%; font-size: 0.9em; padding: 10px;">
             &larr; Volver al inicio de sesión
           </button>
         </form>
-        
+
         <div id="code-message" class="message"></div>
       </div>
     </div>
@@ -130,7 +133,7 @@
     function getFriendlyErrorMessage(error) {
       console.log('Error code:', error.code); // Para depuración
       if (!error || !error.code) return error.message || 'Error desconocido';
-      
+
       switch (error.code) {
         case 'auth/user-not-found':
           return 'No existe una cuenta con este correo electrónico.';
@@ -172,7 +175,7 @@
       isSignup = !isSignup;
       document.getElementById('form-title').textContent = isSignup ? 'Registrarse' : 'Iniciar Sesión';
       document.getElementById('auth-btn').textContent = isSignup ? 'Registrarse' : 'Iniciar Sesión';
-      document.getElementById('toggle-text').innerHTML = isSignup 
+      document.getElementById('toggle-text').innerHTML = isSignup
         ? '¿Ya tienes cuenta? <a href="#" id="toggle-link">Iniciar Sesión</a>'
         : '¿No tienes cuenta? <a href="#" id="toggle-link">Regístrate</a>';
     });
@@ -197,7 +200,7 @@
       try {
         messageEl.textContent = '';
         messageEl.className = 'message';
-        
+
         if (isSignup) {
           await auth.createUserWithEmailAndPassword(email, password);
           messageEl.style.background = 'rgba(34, 197, 94, 0.1)';
@@ -242,7 +245,7 @@
       messageEl.style.background = 'rgba(99, 102, 241, 0.1)';
       messageEl.style.border = '1px solid rgba(99, 102, 241, 0.2)';
       messageEl.style.color = 'var(--primary-color)';
-      
+
       auth.sendPasswordResetEmail(email)
         .then(() => {
           messageEl.style.background = 'rgba(34, 197, 94, 0.1)';
@@ -291,7 +294,7 @@
         messageEl.textContent = 'Ingresa un código válido';
         return;
       }
-      
+
       messageEl.textContent = '';
       messageEl.className = 'message';
 
@@ -381,4 +384,5 @@
     });
   </script>
 </body>
+
 </html>
