@@ -111,6 +111,10 @@
               <polyline points="20 6 9 17 4 12"></polyline>
             </svg>
           </button>
+
+          <button type="button" id="back-to-login-btn" class="btn-text-only" style="background: none; border: none; color: var(--text-secondary); cursor: pointer; text-decoration: underline; margin-top: 15px; width: 100%; font-size: 0.9em; padding: 10px;">
+            &larr; Volver al inicio de sesión
+          </button>
         </form>
         
         <div id="code-message" class="message"></div>
@@ -121,6 +125,37 @@
   <script>
     const auth = window.auth;
     const db = window.db;
+
+    // Función para mensajes de error amigables
+    function getFriendlyErrorMessage(error) {
+      console.log('Error code:', error.code); // Para depuración
+      if (!error || !error.code) return error.message || 'Error desconocido';
+      
+      switch (error.code) {
+        case 'auth/user-not-found':
+          return 'No existe una cuenta con este correo electrónico.';
+        case 'auth/wrong-password':
+          return 'La contraseña ingresada es incorrecta.';
+        case 'auth/invalid-credential':
+        case 'auth/invalid-login-credentials':
+          return 'Correo o contraseña incorrectos. Verifíquelos e intente de nuevo.';
+        case 'auth/invalid-email':
+          return 'El formato del correo electrónico no es válido.';
+        case 'auth/email-already-in-use':
+          return 'Ya existe una cuenta registrada con este correo. Intente iniciar sesión.';
+        case 'auth/weak-password':
+          return 'La contraseña es muy débil. Debe tener al menos 6 caracteres.';
+        case 'auth/network-request-failed':
+          return 'Error de conexión. Verifique su conexión a internet.';
+        case 'auth/too-many-requests':
+          return 'Demasiados intentos fallidos. Por favor espere unos minutos e intente de nuevo.';
+        case 'auth/popup-closed-by-user':
+          return 'Se cerró la ventana de autenticación antes de finalizar.';
+        default:
+          // Limpia el mensaje técnico de Firebase
+          return 'Error: ' + (error.message ? error.message.replace('Firebase: ', '').replace(/\(auth\/.*\)\.?/, '') : 'Ocurrió un error inesperado.');
+      }
+    }
 
     let isSignup = false;
 
@@ -187,7 +222,7 @@
         messageEl.style.background = 'rgba(239, 68, 68, 0.1)';
         messageEl.style.border = '1px solid rgba(239, 68, 68, 0.2)';
         messageEl.style.color = 'var(--danger-color)';
-        messageEl.textContent = err.message || 'Error en autenticación';
+        messageEl.textContent = getFriendlyErrorMessage(err);
       }
     });
 
@@ -239,7 +274,7 @@
         messageEl.style.background = 'rgba(239, 68, 68, 0.1)';
         messageEl.style.border = '1px solid rgba(239, 68, 68, 0.2)';
         messageEl.style.color = 'var(--danger-color)';
-        messageEl.textContent = err.message || 'Error al iniciar con Google';
+        messageEl.textContent = getFriendlyErrorMessage(err);
       });
     });
 
@@ -298,6 +333,16 @@
         messageEl.style.border = '1px solid rgba(239, 68, 68, 0.2)';
         messageEl.style.color = 'var(--danger-color)';
         messageEl.textContent = 'Error: ' + error.message;
+      }
+    });
+
+    // Volver al login desde la pantalla de código
+    document.getElementById('back-to-login-btn').addEventListener('click', async () => {
+      try {
+        await auth.signOut();
+        window.location.reload();
+      } catch (error) {
+        console.error('Error al cerrar sesión:', error);
       }
     });
 
