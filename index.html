@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -11,32 +12,55 @@
     <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
     <script src="firebase-config.js"></script>
 </head>
+
 <body>
     <div class="container">
         <h1>Control de Préstamos</h1>
         <div class="summary">
             <h2>Resumen Financiero</h2>
-            <div id="summary-stats">
-                Capital activo: S/<span id="capital-activo">0.00</span> |
-                Cobrado hoy: S/<span id="cobrado-hoy">0.00</span> |
-                Cobro esperado hoy: S/<span id="cobro-esperado-hoy">0.00</span> |
-                Total por cobrar: S/<span id="total-por-cobrar">0.00</span> |
-                Préstamos activos: <span id="prestamos-activos">0</span>
+            <div id="summary-stats" class="summary-stats-grid">
+                <div class="stat-item">
+                    <span class="stat-label">Capital activo</span>
+                    <span class="stat-value"><span class="currency-symbol">S/</span><span
+                            id="capital-activo">0.00</span></span>
+                    <span class="stat-subtitle">sin interés</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">Cobrado hoy</span>
+                    <span class="stat-value"><span class="currency-symbol">S/</span><span
+                            id="cobrado-hoy">0.00</span></span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">Cobro esperado hoy</span>
+                    <span class="stat-value"><span class="currency-symbol">S/</span><span
+                            id="cobro-esperado-hoy">0.00</span></span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">Total por cobrar</span>
+                    <span class="stat-value"><span class="currency-symbol">S/</span><span
+                            id="total-por-cobrar">0.00</span></span>
+                    <span class="stat-subtitle">monto con interés</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">Préstamos activos</span>
+                    <span class="stat-value"><span id="prestamos-activos">0</span></span>
+                </div>
             </div>
         </div>
 
         <div style="display: flex; justify-content: space-between; align-items: center; margin: 20px 0;">
-    <div style="display: flex; gap: 15px;">
-        <button id="add-expense-btn" class="main-action-btn">Agregar Gasto</button>
-        <button id="history-btn" class="main-action-btn">Historial de Movimientos</button>
-    </div>
-    <button id="logout-btn" class="logout-btn">Cerrar Sesión</button>
-</div>
+            <div style="display: flex; gap: 15px;">
+                <button id="add-expense-btn" class="main-action-btn">Agregar Gasto</button>
+                <button id="history-btn" class="main-action-btn">Historial de Movimientos</button>
+            </div>
+            <button id="logout-btn" class="logout-btn">Cerrar Sesión</button>
+        </div>
 
         <div class="search-bar">
-            <input type="text" id="search-input" placeholder="Buscar por nombre, teléfono o dirección..." onkeyup="searchLoans()">
+            <input type="text" id="search-input" placeholder="Buscar por nombre, teléfono o dirección..."
+                onkeyup="searchLoans()">
         </div>
-        
+
         <h2>Agregar Nuevo Préstamo</h2>
         <form id="loan-form">
             <input type="text" id="nombre" placeholder="Nombre del deudor" required>
@@ -48,12 +72,13 @@
                 <option value="semanal">Semanal</option>
                 <option value="mensual">Mensual</option>
             </select>
-            <input type="number" id="plazo-cantidad" placeholder="Cantidad de períodos (ej. 30 días, 4 semanas)" required min="1">
+            <input type="number" id="plazo-cantidad" placeholder="Cantidad de períodos (ej. 30 días, 4 semanas)"
+                required min="1">
             <input type="date" id="fecha">
             <textarea id="notas" placeholder="Notas adicionales"></textarea>
             <button type="submit">Agregar Préstamo</button>
         </form>
-        
+
         <h2>Lista de Préstamos</h2>
         <div class="filters">
             <button onclick="filterLoans('todos')" class="filter-btn active">Todos</button>
@@ -64,7 +89,7 @@
         </div>
         <ul id="loans-list"></ul>
     </div>
-    
+
     <!-- Modal para detalles -->
     <div id="modal" class="modal">
         <div class="modal-content">
@@ -73,23 +98,23 @@
             <div id="modal-body"></div>
         </div>
     </div>
-    
+
     <!-- Modal para gasto -->
-<div id="expense-modal" class="modal">
-    <div class="modal-content expense-modal-content">
-        <span class="close-expense">&times;</span>
-        <h2>Agregar Gasto</h2>
-        <form id="expense-form">
-            <label for="expense-motive">Motivo del gasto</label>
-            <input type="text" id="expense-motive" placeholder="Ej. Compra de materiales" required>
-            
-            <label for="expense-amount">Monto</label>
-            <input type="number" id="expense-amount" placeholder="0.00" step="0.01" min="0.01" required>
-            
-            <button type="submit" id="save-expense">Guardar Gasto</button>
-        </form>
+    <div id="expense-modal" class="modal">
+        <div class="modal-content expense-modal-content">
+            <span class="close-expense">&times;</span>
+            <h2>Agregar Gasto</h2>
+            <form id="expense-form">
+                <label for="expense-motive">Motivo del gasto</label>
+                <input type="text" id="expense-motive" placeholder="Ej. Compra de materiales" required>
+
+                <label for="expense-amount">Monto</label>
+                <input type="number" id="expense-amount" placeholder="0.00" step="0.01" min="0.01" required>
+
+                <button type="submit" id="save-expense">Guardar Gasto</button>
+            </form>
+        </div>
     </div>
-</div>
 
     <!-- Modal para historial -->
     <div id="history-modal" class="modal">
@@ -100,29 +125,105 @@
         </div>
     </div>
     <!-- Modal para editar préstamo -->
-<div id="edit-modal" class="modal">
-    <div class="modal-content">
-        <span class="close-edit">&times;</span>
-        <h2>Editar Préstamo</h2>
-        <form id="edit-form">
-            <input type="hidden" id="edit-loan-id">
-            <input type="text" id="edit-nombre" placeholder="Nombre del deudor" required>
-            <input type="tel" id="edit-telefono" placeholder="Teléfono">
-            <input type="number" id="edit-capital" placeholder="Capital prestado" required step="0.01">
-            <input type="number" id="edit-interes" placeholder="Interés por período (%)" required step="0.01">
-            <select id="edit-metodo-pago" required>
-                <option value="diario">Diario</option>
-                <option value="semanal">Semanal</option>
-                <option value="mensual">Mensual</option>
-            </select>
-            <input type="number" id="edit-cantidad-periodos" placeholder="Cantidad de períodos" required min="1">
-            <input type="date" id="edit-fecha" required>
-            <textarea id="edit-notas" placeholder="Notas adicionales"></textarea>
-            <button type="submit" style="padding:12px; background:#007bff; color:white; border:none; border-radius:8px; width:100%; font-size:16px; cursor:pointer;">Guardar Cambios</button>
-        </form>
+    <div id="edit-modal" class="modal">
+        <div class="modal-content">
+            <span class="close-edit">&times;</span>
+            <h2>Editar Préstamo</h2>
+            <form id="edit-form">
+                <input type="hidden" id="edit-loan-id">
+                <input type="text" id="edit-nombre" placeholder="Nombre del deudor" required>
+                <input type="tel" id="edit-telefono" placeholder="Teléfono">
+                <input type="number" id="edit-capital" placeholder="Capital prestado" required step="0.01">
+                <input type="number" id="edit-interes" placeholder="Interés por período (%)" required step="0.01">
+                <select id="edit-metodo-pago" required>
+                    <option value="diario">Diario</option>
+                    <option value="semanal">Semanal</option>
+                    <option value="mensual">Mensual</option>
+                </select>
+                <input type="number" id="edit-cantidad-periodos" placeholder="Cantidad de períodos" required min="1">
+                <input type="date" id="edit-fecha" required>
+                <textarea id="edit-notas" placeholder="Notas adicionales"></textarea>
+                <button type="submit"
+                    style="padding:12px; background:#007bff; color:white; border:none; border-radius:8px; width:100%; font-size:16px; cursor:pointer;">Guardar
+                    Cambios</button>
+            </form>
+        </div>
     </div>
-</div>
+
+    <!-- Modal para renovar préstamo -->
+    <div id="renew-modal" class="modal">
+        <div class="modal-content"
+            style="max-width: 450px; padding: 35px; border-radius: 12px; font-family: 'Inter', sans-serif;">
+            <span class="close close-renew" style="font-size: 28px; color: #64748b;">&times;</span>
+            <h2 style="text-align:center; color: #1e293b; margin-bottom: 25px; font-weight:700; font-size: 1.5em;">
+                Renovar Préstamo</h2>
+
+            <div
+                style="background-color: #f8fafc; border: 1px solid #e2e8f0; padding: 20px; border-radius: 10px; margin-bottom: 25px;">
+                <div style="display:flex; justify-content:space-between; margin-bottom: 8px;">
+                    <span style="color: #64748b; font-size: 0.9em; font-weight: 500;">Cliente</span>
+                    <span id="renew-cliente-nombre" style="color: #0f172a; font-weight: 600;"></span>
+                </div>
+                <div style="display:flex; justify-content:space-between; align-items:center;">
+                    <span style="color: #64748b; font-size: 0.9em; font-weight: 500;">Saldo pendiente</span>
+                    <span style="font-weight: 700; color: #ef4444; font-size:1.1em;">S/<span
+                            id="renew-saldo-pendiente">0.00</span></span>
+                </div>
+                <div
+                    style="margin-top: 12px; padding-top: 12px; border-top: 1px dashed #cbd5e1; font-size: 0.85em; color: #64748b; text-align: center;">
+                    El saldo pendiente se agregará como un cobro del día.
+                </div>
+            </div>
+
+            <form id="renew-form" style="display: flex; flex-direction: column; gap: 20px;">
+                <input type="hidden" id="renew-loan-id">
+
+                <div style="display:flex; flex-direction:column;">
+                    <label for="renew-nuevo-monto"
+                        style="font-weight:600; margin-bottom:8px; color:#334155; font-size: 0.9em;">Nuevo monto del
+                        préstamo</label>
+                    <input type="number" id="renew-nuevo-monto" step="0.01" placeholder="Ej: 1000.00" required
+                        style="padding:12px 15px; border:1px solid #cbd5e1; border-radius:8px; width:100%; font-size:1em; box-sizing: border-box; transition: border-color 0.2s;">
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1.5fr 1fr; gap: 20px;">
+                    <div style="display:flex; flex-direction:column;">
+                        <label for="renew-interes"
+                            style="font-weight:600; margin-bottom:8px; color:#334155; font-size: 0.9em;">Interés
+                            (%)</label>
+                        <input type="number" id="renew-interes" step="0.01" required
+                            style="padding:12px 15px; border:1px solid #cbd5e1; border-radius:8px; width:100%; font-size:1em; box-sizing: border-box;">
+                    </div>
+                    <div style="display:flex; flex-direction:column;">
+                        <label for="renew-cantidad-periodos"
+                            style="font-weight:600; margin-bottom:8px; color:#334155; font-size: 0.9em;">N°
+                            Cuotas</label>
+                        <input type="number" id="renew-cantidad-periodos" required
+                            style="padding:12px 15px; border:1px solid #cbd5e1; border-radius:8px; width:100%; font-size:1em; box-sizing: border-box;">
+                    </div>
+                </div>
+
+                <div style="display:flex; flex-direction:column;">
+                    <label for="renew-metodo-pago"
+                        style="font-weight:600; margin-bottom:8px; color:#334155; font-size: 0.9em;">Método de pago /
+                        Frecuencia</label>
+                    <select id="renew-metodo-pago" required
+                        style="padding:12px 15px; border:1px solid #cbd5e1; border-radius:8px; width:100%; font-size:1em; background-color:white; box-sizing: border-box;">
+                        <option value="diario">Diario (Todos los días)</option>
+                        <option value="semanal">Semanal (Una vez por semana)</option>
+                        <option value="mensual">Mensual (Una vez al mes)</option>
+                    </select>
+                </div>
+
+                <button type="submit"
+                    style="margin-top: 10px; padding: 16px; background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); color: white; border: none; border-radius: 8px; font-size:1.1em; font-weight: 700; cursor: pointer; transition: transform 0.1s, box-shadow 0.1s; box-shadow: 0 4px 6px -1px rgba(245, 158, 11, 0.4); text-transform: uppercase; letter-spacing: 0.5px;">
+                    Confirmar Renovación
+                </button>
+            </form>
+        </div>
+    </div>
 
     <script src="script.js"></script>
 </body>
+
 </html>

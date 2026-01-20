@@ -163,8 +163,8 @@ function renderLoans() {
 
     if (searchTerm) {
       return loan.nombre.toLowerCase().includes(searchTerm) ||
-             (loan.telefono && loan.telefono.includes(searchTerm)) ||
-             (loan.notas && loan.notas.toLowerCase().includes(searchTerm));
+        (loan.telefono && loan.telefono.includes(searchTerm)) ||
+        (loan.notas && loan.notas.toLowerCase().includes(searchTerm));
     }
     return true;
   });
@@ -243,88 +243,55 @@ function openModal(loanId) {
 `;
 
   document.getElementById('register-payment').onclick = async () => {
-  if (info.saldoPendiente <= 0) {
-    alert('El préstamo ya está completamente pagado. No se pueden registrar más pagos.');
-    return;
-  }
+    if (info.saldoPendiente <= 0) {
+      alert('El préstamo ya está completamente pagado. No se pueden registrar más pagos.');
+      return;
+    }
 
-  const montoInput = document.getElementById('payment-amount');
-  const monto = parseFloat(montoInput.value);
+    const montoInput = document.getElementById('payment-amount');
+    const monto = parseFloat(montoInput.value);
 
-  if (isNaN(monto) || monto <= 0) {
-    alert('Por favor ingrese un monto válido mayor a cero.');
-    return;
-  }
-  if (monto > info.saldoPendiente) {
-    alert(`El monto no puede exceder el saldo pendiente: S/${info.saldoPendiente.toFixed(2)}`);
-    return;
-  }
-
-  try {
-    const movimientoRef = await getMovimientosCollection().add({
-      tipo: 'pago',
-      monto,
-      nombre: loan.nombre,
-      loanId: loan.id,
-      timestamp: firebase.firestore.Timestamp.now()
-    });
-
-    const pagos = loan.pagos || [];
-    pagos.push({
-      monto,
-      fecha: new Date().toISOString().slice(0, 10),
-      movimientoId: movimientoRef.id
-    });
-
-    await getLoansCollection().doc(loan.id).update({ pagos });
-    montoInput.value = '';
-    openModal(loan.id); // Recargar modal con datos actualizados
-  } catch (error) {
-    alert('Error al registrar el pago.');
-    console.error(error);
-  }
-};
-
-  document.getElementById('renew-loan').onclick = async () => {
-    const nuevoPlazo = prompt('Ingrese el nuevo plazo en períodos:', loan.cantidadPeriodos);
-    if (!nuevoPlazo || isNaN(nuevoPlazo) || nuevoPlazo <= 0) {
-      alert('Por favor ingrese un número válido de períodos.');
+    if (isNaN(monto) || monto <= 0) {
+      alert('Por favor ingrese un monto válido mayor a cero.');
+      return;
+    }
+    if (monto > info.saldoPendiente) {
+      alert(`El monto no puede exceder el saldo pendiente: S/${info.saldoPendiente.toFixed(2)}`);
       return;
     }
 
     try {
-      const pagosTotal = (loan.pagos || []).reduce((s, p) => s + parseFloat(p.monto), 0);
-      const montoFaltante = parseFloat(loan.capital) - pagosTotal;
-
-      if (montoFaltante > 0) {
-        await getMovimientosCollection().add({
-          tipo: 'desembolso_renovacion',
-          monto: montoFaltante,
-          nombre: loan.nombre,
-          loanId: loan.id,
-          timestamp: firebase.firestore.Timestamp.now()
-        });
-      }
-
-      await getLoansCollection().doc(loan.id).update({
-        fecha: new Date().toISOString().slice(0, 10),
-        plazoDias: calcularPlazoDias(loan.metodoPago, parseInt(nuevoPlazo)),
-        cantidadPeriodos: parseInt(nuevoPlazo),
-        pagos: [],
-        renovado: true
+      const movimientoRef = await getMovimientosCollection().add({
+        tipo: 'pago',
+        monto,
+        nombre: loan.nombre,
+        loanId: loan.id,
+        timestamp: firebase.firestore.Timestamp.now()
       });
 
-      alert('Préstamo renovado exitosamente.');
-      modal.style.display = 'none';
+      const pagos = loan.pagos || [];
+      pagos.push({
+        monto,
+        fecha: new Date().toISOString().slice(0, 10),
+        movimientoId: movimientoRef.id
+      });
+
+      await getLoansCollection().doc(loan.id).update({ pagos });
+      montoInput.value = '';
+      openModal(loan.id); // Recargar modal con datos actualizados
     } catch (error) {
-      alert('Error al renovar el préstamo.');
+      alert('Error al registrar el pago.');
       console.error(error);
     }
   };
 
+  document.getElementById('renew-loan').onclick = () => {
+    openRenewModal(loan.id);
+  };
+
   const phList = document.getElementById('payment-history');
   phList.innerHTML = '';
-  
+
   if (!loan.pagos || loan.pagos.length === 0) {
     phList.innerHTML = '<li style="text-align:center;padding:20px;color:#666;">No hay pagos registrados.</li>';
   } else {
@@ -335,39 +302,23 @@ function openModal(loanId) {
     }).forEach((p, i) => {
       const pli = document.createElement('li');
       pli.style.cssText = 'background:white; padding:14px; margin:8px 0; border-radius:8px; display:flex; justify-content:space-between; align-items:center; box-shadow:0 2px 4px rgba(0,0,0,0.1); border:1px solid #e2e8f0;';
-      
+
       const fechaPago = p.fecha ? new Date(p.fecha).toLocaleDateString('es-PE') : 'Fecha no registrada';
-      
+
       pli.innerHTML = `
         <div style="flex:1;">
           <strong style="display:block;margin-bottom:4px;">${fechaPago}</strong>
           <span style="color:#64748b;font-size:0.9em;">Monto: S/${parseFloat(p.monto || 0).toFixed(2)}</span>
         </div>
         <div style="display:flex;gap:8px;">
-          <button class="edit-btn" style="padding:8px 16px;font-size:13px;min-width:auto;" title="Generar recibo PDF">
+          <button class="edit-btn" style="padding:8px 16px;font-size:13px;min-width:auto;" title="Generar recibo PDF" onclick="generarReciboPDF(loans.find(l => l.id === '${loan.id}'), ${JSON.stringify(p).replace(/"/g, '&quot;')})">
             📄 Recibo
           </button>
-          <button class="delete-btn" style="padding:8px 16px;font-size:13px;min-width:auto;" title="Eliminar pago">
+          <button class="delete-btn" style="padding:8px 16px;font-size:13px;min-width:auto;" title="Eliminar pago" onclick="deletePayment('${loan.id}', ${i}, '${p.movimientoId}')">
             🗑️ Eliminar
           </button>
         </div>
       `;
-
-      // Botón de generar recibo
-      const btnRecibo = pli.querySelector('button[title="Generar recibo PDF"]');
-      btnRecibo.onclick = (e) => {
-        e.stopPropagation();
-        e.preventDefault();
-        generarReciboPDF(loan, p);
-      };
-
-      // Botón de eliminar
-      const btnEliminar = pli.querySelector('button[title="Eliminar pago"]');
-      btnEliminar.onclick = (e) => {
-        e.stopPropagation();
-        e.preventDefault();
-        deletePayment(loan.id, i, p.movimientoId);
-      };
 
       phList.appendChild(pli);
     });
@@ -405,18 +356,18 @@ function generarReciboPDF(loan, pago) {
 
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF();
-    
+
     const info = getStatusAndSaldo(loan);
     const fechaActual = new Date();
     const fechaPago = pago.fecha ? new Date(pago.fecha) : fechaActual;
-    
+
     // Calcular cuotas pagadas hasta este pago (incluyendo este pago)
     const pagosHastaEste = (loan.pagos || []).filter(p => {
       const fechaP = p.fecha ? new Date(p.fecha) : new Date();
       return fechaP <= fechaPago;
     });
     const cuotaNumero = pagosHastaEste.length;
-    
+
     // Calcular información del préstamo
     const capital = parseFloat(loan.capital || 0);
     const interesPorcentaje = parseFloat(loan.interes || 0);
@@ -426,12 +377,12 @@ function generarReciboPDF(loan, pago) {
     // Encabezado
     doc.setFillColor(99, 102, 241);
     doc.rect(0, 0, 210, 40, 'F');
-    
+
     doc.setTextColor(255, 255, 255);
     doc.setFontSize(24);
     doc.setFont(undefined, 'bold');
     doc.text('RECIBO DE PAGO', 105, 20, { align: 'center' });
-    
+
     doc.setFontSize(12);
     doc.setFont(undefined, 'normal');
     doc.text('Sistema de Control de Préstamos', 105, 30, { align: 'center' });
@@ -441,37 +392,37 @@ function generarReciboPDF(loan, pago) {
     doc.setFontSize(14);
     doc.setFont(undefined, 'bold');
     doc.text('INFORMACIÓN DEL CLIENTE', 20, 55);
-    
+
     doc.setFontSize(11);
     doc.setFont(undefined, 'normal');
     let yPos = 65;
     doc.text(`Nombre: ${loan.nombre}`, 20, yPos);
     yPos += 8;
     doc.text(`Teléfono: ${loan.telefono || 'No registrado'}`, 20, yPos);
-    
+
     yPos += 15;
     doc.setFont(undefined, 'bold');
     doc.setFontSize(14);
     doc.text('DETALLES DEL PAGO', 20, yPos);
-    
+
     yPos += 10;
     doc.setFont(undefined, 'normal');
     doc.setFontSize(11);
-    doc.text(`Fecha del pago: ${fechaPago.toLocaleDateString('es-PE', { 
-      year: 'numeric', 
-      month: 'long', 
-      day: 'numeric' 
+    doc.text(`Fecha del pago: ${fechaPago.toLocaleDateString('es-PE', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
     })}`, 20, yPos);
     yPos += 8;
     doc.setFont(undefined, 'bold');
     doc.text(`Monto pagado: S/${parseFloat(pago.monto).toFixed(2)}`, 20, yPos);
-    
+
     yPos += 15;
     doc.setFont(undefined, 'normal');
     doc.setFontSize(14);
     doc.setFont(undefined, 'bold');
     doc.text('INFORMACIÓN DEL PRÉSTAMO', 20, yPos);
-    
+
     yPos += 10;
     doc.setFont(undefined, 'normal');
     doc.setFontSize(11);
@@ -483,19 +434,19 @@ function generarReciboPDF(loan, pago) {
     yPos += 8;
     doc.text(`Cuota número: ${cuotaNumero} de ${loan.cantidadPeriodos}`, 20, yPos);
     yPos += 8;
-    
+
     // Calcular saldo después de este pago
     const totalPagadoHastaEste = pagosHastaEste.reduce((sum, p) => sum + parseFloat(p.monto || 0), 0);
     const saldoDespues = Math.max(0, deudaTotal - totalPagadoHastaEste);
-    
+
     doc.setFont(undefined, 'bold');
     doc.text(`Saldo pendiente después del pago: S/${saldoDespues.toFixed(2)}`, 20, yPos);
-    
+
     // Línea separadora
     yPos += 15;
     doc.setDrawColor(200, 200, 200);
     doc.line(20, yPos, 190, yPos);
-    
+
     // Pie de página
     yPos += 15;
     doc.setFontSize(9);
@@ -504,11 +455,11 @@ function generarReciboPDF(loan, pago) {
     doc.text(`Recibo generado el ${fechaActual.toLocaleDateString('es-PE')} a las ${fechaActual.toLocaleTimeString('es-PE')}`, 20, yPos);
     yPos += 8;
     doc.text('Este documento es una evidencia del pago realizado.', 20, yPos);
-    
+
     // Guardar PDF
     const nombreArchivo = `recibo_${loan.nombre.replace(/\s+/g, '_')}_${fechaPago.toISOString().slice(0, 10)}.pdf`;
     doc.save(nombreArchivo);
-    
+
   } catch (error) {
     console.error('Error al generar el recibo PDF:', error);
     alert('Error al generar el recibo. Por favor, intente nuevamente.');
@@ -560,10 +511,10 @@ async function deletePayment(loanId, paymentIndex, movimientoId) {
 
     // Recargar el modal con los datos actualizados
     openModal(loanId);
-    
+
     // El resumen financiero y el historial se actualizarán automáticamente
     // gracias a los listeners de Firestore (setupRealtimeListeners)
-    
+
   } catch (error) {
     console.error('Error al eliminar el pago:', error);
     alert('Error al eliminar el pago. Por favor, intente nuevamente.');
@@ -588,70 +539,53 @@ function renderHistory() {
   }
 
   filtered.forEach(mov => {
-    const date = mov.timestamp?.toDate?.() || new Date();
     const li = document.createElement('li');
     li.style.cssText = 'background:white;padding:15px;margin:10px 0;border-radius:8px;box-shadow:0 2px 5px rgba(0,0,0,0.1);position:relative;';
     li.innerHTML = `<div style="padding-right:50px;">
       <strong>${formatDateTime(mov.timestamp)}</strong><br>
       ${mov.tipo === 'pago' ? '🟢 Pago' : mov.tipo === 'gasto' ? '🔴 Gasto' : '🔵 Movimiento'} S/${parseFloat(mov.monto).toFixed(2)}<br>
       ${mov.tipo === 'pago' ? `De: ${mov.nombre}` : mov.motivo ? `Motivo: ${mov.motivo}` : ''}
-    </div>`;
+    </div>
+    <span style="position:absolute;top:10px;right:15px;font-size:1.4em;cursor:pointer;" onclick="deleteMovimiento('${mov.id}')">🗑️</span>`;
 
-    const deleteIcon = document.createElement('span');
-    deleteIcon.innerHTML = '🗑️';
-    deleteIcon.style.cssText = 'position:absolute;top:10px;right:15px;font-size:1.4em;cursor:pointer;';
-    deleteIcon.onclick = async (e) => {
-      e.stopPropagation();
-      if (confirm('¿Eliminar este movimiento? Esto también eliminará el pago del detalle del préstamo si corresponde.')) {
-        try {
-          if (mov.tipo === 'pago' && mov.loanId) {
-            const loanDoc = await getLoansCollection().doc(mov.loanId).get();
-            if (loanDoc.exists) {
-              let pagos = loanDoc.data().pagos || [];
-              const movDate = mov.timestamp?.toDate?.() || new Date();
-              const movDateStr = movDate.toISOString().slice(0, 10); // YYYY-MM-DD
-              
-              // Buscar y eliminar el pago que coincida con el movimientoId O con la fecha y monto
-              pagos = pagos.filter(p => {
-                // Si tiene movimientoId y coincide, eliminar directamente
-                if (p.movimientoId === mov.id) {
-                  return false; // Eliminar este pago
-                }
-                
-                // Si no tiene movimientoId o no coincide por ID, comparar por fecha y monto
-                const pagoDate = p.fecha ? new Date(p.fecha).toISOString().slice(0, 10) : null;
-                const mismoDia = pagoDate === movDateStr;
-                const mismoMonto = Math.abs(parseFloat(p.monto || 0) - parseFloat(mov.monto || 0)) < 0.01;
-                
-                // Si es el mismo día y mismo monto, es el mismo pago
-                if (mismoDia && mismoMonto) {
-                  return false; // Eliminar este pago
-                }
-                
-                return true; // Mantener este pago
-              });
-              
-              await getLoansCollection().doc(mov.loanId).update({ pagos });
-              
-              // Si el modal está abierto, recargarlo
-              const modal = document.getElementById('modal');
-              if (modal && modal.style.display === 'block') {
-                openModal(mov.loanId);
-              }
-            }
-          }
-          
-          // Eliminar el movimiento
-          await getMovimientosCollection().doc(mov.id).delete();
-        } catch (err) {
-          console.error('Error al eliminar el movimiento:', err);
-          alert('Error al eliminar el movimiento.');
-        }
-      }
-    };
-    li.appendChild(deleteIcon);
     list.appendChild(li);
   });
+}
+
+async function deleteMovimiento(movimientoId) {
+  if (!confirm('¿Eliminar este movimiento? Esto también eliminará el pago del detalle del préstamo si corresponde.')) return;
+
+  try {
+    const mov = movimientos.find(m => m.id === movimientoId);
+    if (!mov) {
+      alert('Movimiento no encontrado, tal vez ya fue eliminado.');
+      return;
+    }
+
+    if (mov.tipo === 'pago' && mov.loanId) {
+      const loanDoc = await getLoansCollection().doc(mov.loanId).get();
+      if (loanDoc.exists) {
+        let pagos = loanDoc.data().pagos || [];
+
+        // Filtrar el pago correspondiente
+        pagos = pagos.filter(p => p.movimientoId !== movimientoId);
+
+        await getLoansCollection().doc(mov.loanId).update({ pagos });
+
+        // Si el modal está abierto, recargarlo
+        const modal = document.getElementById('modal');
+        if (modal && modal.style.display === 'block') {
+          openModal(mov.loanId);
+        }
+      }
+    }
+
+    // Eliminar el movimiento
+    await getMovimientosCollection().doc(movimientoId).delete();
+  } catch (err) {
+    console.error('Error al eliminar el movimiento:', err);
+    alert('Error al eliminar el movimiento.');
+  }
 }
 
 function calcularPlazoDias(metodo, cantidad) {
@@ -665,6 +599,7 @@ function updateSummary() {
   today.setHours(0, 0, 0, 0);
 
   let capitalActivo = 0, cobradoHoy = 0, cobroEsperadoHoy = 0, totalPorCobrar = 0, prestamosActivos = 0;
+  let totalGastos = 0;
 
   loans.forEach(loan => {
     const info = getStatusAndSaldo(loan);
@@ -684,9 +619,16 @@ function updateSummary() {
     const movDate = mov.timestamp?.toDate?.() || new Date();
     if (movDate.toDateString() === today.toDateString()) {
       if (mov.tipo === 'pago') cobradoHoy += parseFloat(mov.monto);
-      if (mov.tipo === 'gasto') cobradoHoy -= parseFloat(mov.monto);
+      // Ya no restamos gastos de cobradoHoy
+    }
+    // Sumar todos los gastos para restarlos del total por cobrar
+    if (mov.tipo === 'gasto') {
+      totalGastos += parseFloat(mov.monto);
     }
   });
+
+  // Restar gastos del total por cobrar
+  totalPorCobrar = Math.max(0, totalPorCobrar - totalGastos);
 
   document.getElementById('capital-activo').textContent = capitalActivo.toFixed(2);
   document.getElementById('cobrado-hoy').textContent = Math.max(0, cobradoHoy).toFixed(2);
@@ -779,7 +721,7 @@ function setupEventListeners() {
   // Formulario de gasto
   document.getElementById('expense-form').addEventListener('submit', async (e) => {
     e.preventDefault();
-    
+
     const motivo = document.getElementById('expense-motive').value.trim();
     const monto = parseFloat(document.getElementById('expense-amount').value);
 
@@ -788,25 +730,7 @@ function setupEventListeners() {
       return;
     }
 
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    let cobradoHoy = 0;
-    
-    // Calcular el cobrado neto de hoy (pagos - gastos)
-    movimientos.forEach(m => {
-      const mDate = m.timestamp?.toDate?.() || new Date();
-      mDate.setHours(0, 0, 0, 0);
-      if (mDate.getTime() === today.getTime()) {
-        if (m.tipo === 'pago') cobradoHoy += parseFloat(m.monto || 0);
-        if (m.tipo === 'gasto') cobradoHoy -= parseFloat(m.monto || 0);
-      }
-    });
-
-    // Validar que el gasto no exceda lo cobrado hoy
-    if (monto > cobradoHoy) {
-      alert(`El gasto no puede exceder el cobrado neto del día (S/${cobradoHoy.toFixed(2)}).`);
-      return;
-    }
+    // Eliminada validación de cobradoHoy porque el gasto ya no depende de ello.
 
     try {
       await getMovimientosCollection().add({
@@ -830,7 +754,7 @@ function setupEventListeners() {
   };
 
   // Cerrar modales
-  document.querySelectorAll('.close, .close-expense, .close-history').forEach(el => {
+  document.querySelectorAll('.close, .close-expense, .close-history, .close-renew').forEach(el => {
     el.onclick = () => el.closest('.modal').style.display = 'none';
   });
 
@@ -850,4 +774,96 @@ function setupEventListeners() {
       window.location.replace('login.html');
     }
   };
+
+  // Formulario de renovación de préstamo
+  document.getElementById('renew-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+
+    const loanId = document.getElementById('renew-loan-id').value;
+    const nuevoMonto = parseFloat(document.getElementById('renew-nuevo-monto').value);
+    const interes = parseFloat(document.getElementById('renew-interes').value);
+    const metodoPago = document.getElementById('renew-metodo-pago').value;
+    const cantidadPeriodos = parseInt(document.getElementById('renew-cantidad-periodos').value);
+
+    if (isNaN(nuevoMonto) || nuevoMonto <= 0) {
+      alert('Por favor ingrese un monto válido.');
+      return;
+    }
+
+    if (isNaN(cantidadPeriodos) || cantidadPeriodos <= 0) {
+      alert('Por favor ingrese un número válido de períodos.');
+      return;
+    }
+
+    const loan = loans.find(l => l.id === loanId);
+    if (!loan) {
+      alert('Error: No se encontró el préstamo.');
+      return;
+    }
+
+    try {
+      const info = getStatusAndSaldo(loan);
+      const saldoPendiente = info.saldoPendiente;
+
+      // Registrar el saldo pendiente como cobro del día
+      if (saldoPendiente > 0) {
+        await getMovimientosCollection().add({
+          tipo: 'pago',
+          monto: saldoPendiente,
+          nombre: loan.nombre,
+          loanId: loan.id,
+          descripcion: 'Cobro por renovación de préstamo',
+          timestamp: firebase.firestore.Timestamp.now()
+        });
+      }
+
+      // Actualizar el préstamo con los nuevos datos
+      const plazoDias = calcularPlazoDias(metodoPago, cantidadPeriodos);
+
+      await getLoansCollection().doc(loan.id).update({
+        capital: nuevoMonto,
+        interes: interes,
+        metodoPago: metodoPago,
+        cantidadPeriodos: cantidadPeriodos,
+        plazoDias: plazoDias,
+        fecha: new Date().toISOString().slice(0, 10),
+        pagos: [],
+        renovado: true
+      });
+
+      alert('Préstamo renovado exitosamente. El saldo pendiente ha sido registrado como cobro del día.');
+      document.getElementById('renew-modal').style.display = 'none';
+      document.getElementById('modal').style.display = 'none';
+      document.getElementById('renew-form').reset();
+    } catch (error) {
+      console.error('Error al renovar el préstamo:', error);
+      alert('Error al renovar el préstamo. Por favor, intente nuevamente.');
+    }
+  });
 }
+
+// Función para abrir el modal de renovación
+function openRenewModal(loanId) {
+  const loan = loans.find(l => l.id === loanId);
+  if (!loan) return;
+
+  const info = getStatusAndSaldo(loan);
+
+  document.getElementById('renew-loan-id').value = loan.id;
+  document.getElementById('renew-cliente-nombre').textContent = loan.nombre;
+  document.getElementById('renew-saldo-pendiente').textContent = info.saldoPendiente.toFixed(2);
+  document.getElementById('renew-nuevo-monto').value = '';
+  document.getElementById('renew-interes').value = parseFloat(loan.interes).toFixed(2);
+  document.getElementById('renew-metodo-pago').value = loan.metodoPago;
+  document.getElementById('renew-cantidad-periodos').value = loan.cantidadPeriodos;
+
+  document.getElementById('renew-modal').style.display = 'block';
+}
+
+// Exponer funciones globales para que funcionen desde onclick en HTML
+window.deletePayment = deletePayment;
+window.deleteMovimiento = deleteMovimiento;
+window.generarReciboPDF = generarReciboPDF;
+window.openRenewModal = openRenewModal;
+window.openModal = openModal;
+window.openEditModal = openEditModal;
